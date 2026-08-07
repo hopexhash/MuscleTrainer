@@ -1,0 +1,487 @@
+[
+  {
+    "id": "ab-wheel",
+    "name": "Ab Wheel Rollout",
+    "muscle": "Abs"
+  },
+  {
+    "id": "cable-crunch",
+    "name": "Cable Crunch",
+    "muscle": "Abs"
+  },
+  {
+    "id": "crunch",
+    "name": "Crunch",
+    "muscle": "Abs"
+  },
+  {
+    "id": "dead-bug",
+    "name": "Dead Bug",
+    "muscle": "Abs"
+  },
+  {
+    "id": "hanging-knee-raise",
+    "name": "Hanging Knee Raise",
+    "muscle": "Abs"
+  },
+  {
+    "id": "hanging-leg-raise",
+    "name": "Hanging Leg Raise",
+    "muscle": "Abs"
+  },
+  {
+    "id": "mountain-climbers",
+    "name": "Mountain Climbers",
+    "muscle": "Abs"
+  },
+  {
+    "id": "plank",
+    "name": "Plank",
+    "muscle": "Abs"
+  },
+  {
+    "id": "adductor-machine",
+    "name": "Adductor Machine",
+    "muscle": "Adductors"
+  },
+  {
+    "id": "copenhagen-plank",
+    "name": "Copenhagen Plank",
+    "muscle": "Adductors"
+  },
+  {
+    "id": "band-curl",
+    "name": "Banded Curl",
+    "muscle": "Biceps"
+  },
+  {
+    "id": "bb-curl",
+    "name": "Barbell Curl",
+    "muscle": "Biceps"
+  },
+  {
+    "id": "cable-curl",
+    "name": "Cable Curl",
+    "muscle": "Biceps"
+  },
+  {
+    "id": "db-curl",
+    "name": "Dumbbell Curl",
+    "muscle": "Biceps"
+  },
+  {
+    "id": "hammer-curl",
+    "name": "Hammer Curl",
+    "muscle": "Biceps"
+  },
+  {
+    "id": "incline-curl",
+    "name": "Incline Dumbbell Curl",
+    "muscle": "Biceps"
+  },
+  {
+    "id": "preacher-curl",
+    "name": "Preacher Curl",
+    "muscle": "Biceps"
+  },
+  {
+    "id": "seated-calf-raise",
+    "name": "Seated Calf Raise",
+    "muscle": "Calves"
+  },
+  {
+    "id": "standing-calf-raise",
+    "name": "Standing Calf Raise",
+    "muscle": "Calves"
+  },
+  {
+    "id": "band-chest-press",
+    "name": "Banded Chest Press",
+    "muscle": "Chest"
+  },
+  {
+    "id": "bench-press",
+    "name": "Barbell Bench Press",
+    "muscle": "Chest"
+  },
+  {
+    "id": "cable-fly",
+    "name": "Cable Fly",
+    "muscle": "Chest"
+  },
+  {
+    "id": "dips-chest",
+    "name": "Chest Dips",
+    "muscle": "Chest"
+  },
+  {
+    "id": "db-bench-press",
+    "name": "Dumbbell Bench Press",
+    "muscle": "Chest"
+  },
+  {
+    "id": "db-fly",
+    "name": "Dumbbell Fly",
+    "muscle": "Chest"
+  },
+  {
+    "id": "incline-push-up",
+    "name": "Incline Push-Up",
+    "muscle": "Chest"
+  },
+  {
+    "id": "chest-press-machine",
+    "name": "Machine Chest Press",
+    "muscle": "Chest"
+  },
+  {
+    "id": "pec-deck",
+    "name": "Pec Deck",
+    "muscle": "Chest"
+  },
+  {
+    "id": "push-up",
+    "name": "Push-Up",
+    "muscle": "Chest"
+  },
+  {
+    "id": "smith-bench-press",
+    "name": "Smith Machine Bench Press",
+    "muscle": "Chest"
+  },
+  {
+    "id": "farmers-carry",
+    "name": "Farmer's Carry",
+    "muscle": "Forearms"
+  },
+  {
+    "id": "reverse-curl",
+    "name": "Reverse Curl",
+    "muscle": "Forearms"
+  },
+  {
+    "id": "wrist-curl",
+    "name": "Wrist Curl",
+    "muscle": "Forearms"
+  },
+  {
+    "id": "arnold-press",
+    "name": "Arnold Press",
+    "muscle": "Front Delts"
+  },
+  {
+    "id": "db-shoulder-press",
+    "name": "Dumbbell Shoulder Press",
+    "muscle": "Front Delts"
+  },
+  {
+    "id": "front-raise",
+    "name": "Front Raise",
+    "muscle": "Front Delts"
+  },
+  {
+    "id": "ohp",
+    "name": "Overhead Press",
+    "muscle": "Front Delts"
+  },
+  {
+    "id": "pike-push-up",
+    "name": "Pike Push-Up",
+    "muscle": "Front Delts"
+  },
+  {
+    "id": "hip-thrust",
+    "name": "Barbell Hip Thrust",
+    "muscle": "Glutes"
+  },
+  {
+    "id": "cable-kickback",
+    "name": "Cable Glute Kickback",
+    "muscle": "Glutes"
+  },
+  {
+    "id": "glute-bridge",
+    "name": "Glute Bridge",
+    "muscle": "Glutes"
+  },
+  {
+    "id": "kb-swing",
+    "name": "Kettlebell Swing",
+    "muscle": "Glutes"
+  },
+  {
+    "id": "db-rdl",
+    "name": "Dumbbell Romanian Deadlift",
+    "muscle": "Hamstrings"
+  },
+  {
+    "id": "leg-curl",
+    "name": "Lying Leg Curl",
+    "muscle": "Hamstrings"
+  },
+  {
+    "id": "nordic-curl",
+    "name": "Nordic Hamstring Curl",
+    "muscle": "Hamstrings"
+  },
+  {
+    "id": "rdl",
+    "name": "Romanian Deadlift",
+    "muscle": "Hamstrings"
+  },
+  {
+    "id": "hip-flexor-raise",
+    "name": "Standing Knee Raise",
+    "muscle": "Hip Flexors"
+  },
+  {
+    "id": "chin-up",
+    "name": "Chin-Up",
+    "muscle": "Lats"
+  },
+  {
+    "id": "db-row",
+    "name": "Dumbbell Row",
+    "muscle": "Lats"
+  },
+  {
+    "id": "lat-pulldown",
+    "name": "Lat Pulldown",
+    "muscle": "Lats"
+  },
+  {
+    "id": "pull-up",
+    "name": "Pull-Up",
+    "muscle": "Lats"
+  },
+  {
+    "id": "single-arm-lat-pulldown",
+    "name": "Single-Arm Lat Pulldown",
+    "muscle": "Lats"
+  },
+  {
+    "id": "straight-arm-pulldown",
+    "name": "Straight-Arm Pulldown",
+    "muscle": "Lats"
+  },
+  {
+    "id": "back-extension",
+    "name": "Back Extension",
+    "muscle": "Lower Back"
+  },
+  {
+    "id": "deadlift",
+    "name": "Deadlift",
+    "muscle": "Lower Back"
+  },
+  {
+    "id": "rack-pull",
+    "name": "Rack Pull",
+    "muscle": "Lower Back"
+  },
+  {
+    "id": "bicycle-crunch",
+    "name": "Bicycle Crunch",
+    "muscle": "Obliques"
+  },
+  {
+    "id": "pallof-press",
+    "name": "Pallof Press",
+    "muscle": "Obliques"
+  },
+  {
+    "id": "russian-twist",
+    "name": "Russian Twist",
+    "muscle": "Obliques"
+  },
+  {
+    "id": "side-plank",
+    "name": "Side Plank",
+    "muscle": "Obliques"
+  },
+  {
+    "id": "back-squat",
+    "name": "Barbell Back Squat",
+    "muscle": "Quads"
+  },
+  {
+    "id": "bulgarian-split-squat",
+    "name": "Bulgarian Split Squat",
+    "muscle": "Quads"
+  },
+  {
+    "id": "front-squat",
+    "name": "Front Squat",
+    "muscle": "Quads"
+  },
+  {
+    "id": "goblet-squat",
+    "name": "Goblet Squat",
+    "muscle": "Quads"
+  },
+  {
+    "id": "hack-squat",
+    "name": "Hack Squat",
+    "muscle": "Quads"
+  },
+  {
+    "id": "jump-squat",
+    "name": "Jump Squat",
+    "muscle": "Quads"
+  },
+  {
+    "id": "leg-extension",
+    "name": "Leg Extension",
+    "muscle": "Quads"
+  },
+  {
+    "id": "leg-press",
+    "name": "Leg Press",
+    "muscle": "Quads"
+  },
+  {
+    "id": "reverse-lunge",
+    "name": "Reverse Lunge",
+    "muscle": "Quads"
+  },
+  {
+    "id": "smith-squat",
+    "name": "Smith Machine Squat",
+    "muscle": "Quads"
+  },
+  {
+    "id": "step-up",
+    "name": "Step-Up",
+    "muscle": "Quads"
+  },
+  {
+    "id": "walking-lunge",
+    "name": "Walking Lunge",
+    "muscle": "Quads"
+  },
+  {
+    "id": "wall-sit",
+    "name": "Wall Sit",
+    "muscle": "Quads"
+  },
+  {
+    "id": "band-pull-apart",
+    "name": "Band Pull-Apart",
+    "muscle": "Rear Delts"
+  },
+  {
+    "id": "face-pull",
+    "name": "Face Pull",
+    "muscle": "Rear Delts"
+  },
+  {
+    "id": "rear-delt-fly",
+    "name": "Rear Delt Fly",
+    "muscle": "Rear Delts"
+  },
+  {
+    "id": "reverse-pec-deck",
+    "name": "Reverse Pec Deck",
+    "muscle": "Rear Delts"
+  },
+  {
+    "id": "band-lateral-raise",
+    "name": "Banded Lateral Raise",
+    "muscle": "Side Delts"
+  },
+  {
+    "id": "cable-lateral-raise",
+    "name": "Cable Lateral Raise",
+    "muscle": "Side Delts"
+  },
+  {
+    "id": "lateral-raise",
+    "name": "Lateral Raise",
+    "muscle": "Side Delts"
+  },
+  {
+    "id": "upright-row",
+    "name": "Upright Row",
+    "muscle": "Side Delts"
+  },
+  {
+    "id": "tibialis-raise",
+    "name": "Tibialis Raise",
+    "muscle": "Tibialis"
+  },
+  {
+    "id": "shrug",
+    "name": "Dumbbell Shrug",
+    "muscle": "Traps"
+  },
+  {
+    "id": "bench-dip",
+    "name": "Bench Dip",
+    "muscle": "Triceps"
+  },
+  {
+    "id": "close-grip-bench",
+    "name": "Close-Grip Bench Press",
+    "muscle": "Triceps"
+  },
+  {
+    "id": "diamond-push-up",
+    "name": "Diamond Push-Up",
+    "muscle": "Triceps"
+  },
+  {
+    "id": "overhead-tricep-ext",
+    "name": "Overhead Tricep Extension",
+    "muscle": "Triceps"
+  },
+  {
+    "id": "skull-crusher",
+    "name": "Skull Crusher",
+    "muscle": "Triceps"
+  },
+  {
+    "id": "tricep-pushdown",
+    "name": "Tricep Pushdown",
+    "muscle": "Triceps"
+  },
+  {
+    "id": "barbell-row",
+    "name": "Barbell Row",
+    "muscle": "Upper Back"
+  },
+  {
+    "id": "inverted-row",
+    "name": "Inverted Row",
+    "muscle": "Upper Back"
+  },
+  {
+    "id": "seated-cable-row",
+    "name": "Seated Cable Row",
+    "muscle": "Upper Back"
+  },
+  {
+    "id": "tbar-row",
+    "name": "T-Bar Row",
+    "muscle": "Upper Back"
+  },
+  {
+    "id": "decline-push-up",
+    "name": "Decline Push-Up",
+    "muscle": "Upper Chest"
+  },
+  {
+    "id": "incline-bench-press",
+    "name": "Incline Bench Press",
+    "muscle": "Upper Chest"
+  },
+  {
+    "id": "incline-db-press",
+    "name": "Incline Dumbbell Press",
+    "muscle": "Upper Chest"
+  },
+  {
+    "id": "low-cable-fly",
+    "name": "Low-to-High Cable Fly",
+    "muscle": "Upper Chest"
+  }
+]

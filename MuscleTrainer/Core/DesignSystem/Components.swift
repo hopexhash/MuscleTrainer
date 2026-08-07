@@ -213,42 +213,35 @@ struct EmptyStateView: View {
     }
 }
 
-// MARK: - Media placeholder
+// MARK: - Exercise media
 
-/// Honest placeholder for exercise media that hasn't shipped yet.
+/// Exercise demo area. Plays the user's uploaded video from the media server
+/// as a muted loop when one exists; otherwise shows an honest placeholder.
 struct ExerciseMediaView: View {
-    let media: ExerciseMedia
+    let exercise: Exercise
     var height: CGFloat = 180
+
+    @Environment(MediaService.self) private var mediaService
 
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: DS.radius, style: .continuous)
                 .fill(AppColor.surface)
-            switch media {
-            case .placeholder(let systemImage):
-                VStack(spacing: DS.spacingS) {
-                    Image(systemName: systemImage)
-                        .font(.system(size: 44, weight: .light))
-                        .foregroundStyle(AppColor.accent.opacity(0.7))
-                    Text("Demo coming soon")
-                        .font(AppFont.metaSmall)
-                        .foregroundStyle(AppColor.textSecondary)
-                }
-            case .image(let name):
-                Image(name)
-                    .resizable()
-                    .scaledToFit()
+            if let url = mediaService.videoURL(for: exercise.id) {
+                LoopingVideoView(url: url)
                     .clipShape(RoundedRectangle(cornerRadius: DS.radius, style: .continuous))
-            case .localVideo, .remoteVideo, .animation:
-                // Playback support lands with real media assets.
-                VStack(spacing: DS.spacingS) {
-                    Image(systemName: "play.circle")
-                        .font(.system(size: 44, weight: .light))
-                        .foregroundStyle(AppColor.accent.opacity(0.7))
-                    Text("Video demo")
-                        .font(AppFont.metaSmall)
-                        .foregroundStyle(AppColor.textSecondary)
-                }
+                    .overlay(alignment: .bottomTrailing) {
+                        Text("LOOP")
+                            .font(AppFont.metaSmall)
+                            .foregroundStyle(.white.opacity(0.9))
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(.black.opacity(0.45))
+                            .clipShape(Capsule())
+                            .padding(8)
+                    }
+            } else {
+                placeholder
             }
         }
         .frame(height: height)
@@ -256,7 +249,36 @@ struct ExerciseMediaView: View {
             RoundedRectangle(cornerRadius: DS.radius, style: .continuous)
                 .strokeBorder(AppColor.border, lineWidth: 1)
         )
-        .accessibilityHidden(true)
+        .accessibilityLabel("Exercise demonstration for \(exercise.name)")
+    }
+
+    @ViewBuilder
+    private var placeholder: some View {
+        switch exercise.media {
+        case .placeholder(let systemImage):
+            VStack(spacing: DS.spacingS) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 44, weight: .light))
+                    .foregroundStyle(AppColor.accent.opacity(0.7))
+                Text("Demo coming soon")
+                    .font(AppFont.metaSmall)
+                    .foregroundStyle(AppColor.textSecondary)
+            }
+        case .image(let name):
+            Image(name)
+                .resizable()
+                .scaledToFit()
+                .clipShape(RoundedRectangle(cornerRadius: DS.radius, style: .continuous))
+        case .localVideo, .remoteVideo, .animation:
+            VStack(spacing: DS.spacingS) {
+                Image(systemName: "play.circle")
+                    .font(.system(size: 44, weight: .light))
+                    .foregroundStyle(AppColor.accent.opacity(0.7))
+                Text("Video demo")
+                    .font(AppFont.metaSmall)
+                    .foregroundStyle(AppColor.textSecondary)
+            }
+        }
     }
 }
 

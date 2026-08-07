@@ -6,6 +6,7 @@ struct ProfileView: View {
     @Query private var sessions: [WorkoutSession]
     @Environment(\.modelContext) private var context
     @Environment(ThemeManager.self) private var themeManager
+    @Environment(MediaService.self) private var mediaService
 
     var body: some View {
         NavigationStack {
@@ -24,6 +25,7 @@ struct ProfileView: View {
     private func profileContent(_ profile: UserProfile) -> some View {
         @Bindable var profile = profile
         @Bindable var themeManager = themeManager
+        @Bindable var mediaService = mediaService
         return List {
             Section {
                 HStack(spacing: DS.spacing) {
@@ -84,6 +86,50 @@ struct ProfileView: View {
                     }
                 }
                 Toggle("Use metric units (kg)", isOn: $profile.usesMetric)
+            }
+            .listRowBackground(AppColor.card)
+
+            Section {
+                TextField("https://your-media-server.example", text: $mediaService.serverURLString)
+                    .font(AppFont.body)
+                    .keyboardType(.URL)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .submitLabel(.done)
+                    .onSubmit {
+                        Task { await mediaService.refresh() }
+                    }
+                HStack {
+                    if mediaService.isLoading {
+                        ProgressView()
+                        Text("Checking…")
+                            .font(AppFont.meta)
+                            .foregroundStyle(AppColor.textSecondary)
+                    } else if let error = mediaService.lastError {
+                        Text(error)
+                            .font(AppFont.meta)
+                            .foregroundStyle(AppColor.destructive)
+                    } else if !mediaService.isConfigured {
+                        Text("Run the bundled media server and paste its URL to see your own demo videos.")
+                            .font(AppFont.meta)
+                            .foregroundStyle(AppColor.textSecondary)
+                    } else {
+                        Text("\(mediaService.videos.count) exercise video\(mediaService.videos.count == 1 ? "" : "s") linked")
+                            .font(AppFont.meta)
+                            .foregroundStyle(AppColor.textSecondary)
+                    }
+                    Spacer()
+                    Button("Refresh") {
+                        Task { await mediaService.refresh() }
+                    }
+                    .font(AppFont.meta)
+                    .foregroundStyle(AppColor.accent)
+                    .disabled(!mediaService.isConfigured || mediaService.isLoading)
+                }
+            } header: {
+                Text("Exercise videos")
+            } footer: {
+                Text("Videos you upload in the server's admin page play as loops on exercise pages and in the workout player.")
             }
             .listRowBackground(AppColor.card)
 

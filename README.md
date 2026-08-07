@@ -12,6 +12,7 @@ A modern, native iOS fitness app built around an **interactive human anatomy mod
 - **Progress** — weekly count, streak, totals, volume trend, most/least trained muscles, and an aggregate body heatmap.
 - **Theming** — System/Light/Dark with a centralized theme manager and a full semantic color system (electric-blue accent on deep dark surfaces).
 - **Persistence** — SwiftData for profile, workouts, favorites, and full session history; seeded with 5 example workouts on first launch.
+- **Your own exercise videos** — a bundled self-hosted media server (`backend/`) with an admin page for uploading a looping demo video per exercise. The app fetches the manifest and plays your clips as muted loops in exercise details and the workout player. Set the server URL in Profile → Exercise videos.
 
 ## Tech
 
@@ -42,7 +43,7 @@ MuscleTrainer/
 ## Notes
 
 - Anatomy artwork is a clean, original vector representation authored in a normalized design space; professional SVG anatomy can be swapped into `AnatomyShapeStore` without touching exercise or selection logic.
-- Exercise media uses an honest placeholder system (`ExerciseMedia`) that supports bundled animations, video, image sequences, and remote assets once real footage exists.
+- Exercise media prefers your uploaded videos from the media server (see `backend/README.md`), falling back to an honest placeholder system (`ExerciseMedia`) that also supports bundled animations, images, and remote assets.
 - Architecture leaves room for accounts, cloud sync, HealthKit, StoreKit 2 premium, and a hosted AI API.
 
 ## Build

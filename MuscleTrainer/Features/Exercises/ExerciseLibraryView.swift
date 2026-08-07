@@ -121,10 +121,15 @@ struct ExerciseCard: View {
     var showsAddButton: Bool = true
 
     @Environment(AppState.self) private var appState
+    @Environment(MediaService.self) private var mediaService
     @Query private var profiles: [UserProfile]
     @Environment(\.modelContext) private var context
 
     private var profile: UserProfile? { profiles.first }
+
+    private var hasVideo: Bool {
+        mediaService.videoURL(for: exercise.id) != nil
+    }
 
     var body: some View {
         HStack(spacing: DS.spacingM) {
@@ -132,8 +137,8 @@ struct ExerciseCard: View {
                 RoundedRectangle(cornerRadius: DS.radiusS, style: .continuous)
                     .fill(AppColor.surface)
                     .frame(width: 56, height: 56)
-                Image(systemName: mediaIcon)
-                    .font(.system(size: 22, weight: .light))
+                Image(systemName: hasVideo ? "play.fill" : mediaIcon)
+                    .font(.system(size: 22, weight: hasVideo ? .medium : .light))
                     .foregroundStyle(AppColor.accent.opacity(0.8))
             }
 

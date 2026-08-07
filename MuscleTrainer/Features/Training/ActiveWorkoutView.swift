@@ -84,7 +84,7 @@ struct ActiveWorkoutView: View {
 
                 ScrollView {
                     VStack(spacing: DS.spacing) {
-                        ExerciseMediaView(media: item.exercise.media, height: 150)
+                        ExerciseMediaView(exercise: item.exercise, height: 150)
 
                         if controller.isResting {
                             restCard

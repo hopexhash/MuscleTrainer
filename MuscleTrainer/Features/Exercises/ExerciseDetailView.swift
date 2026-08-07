@@ -13,7 +13,7 @@ struct ExerciseDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: DS.spacingL) {
-                ExerciseMediaView(media: exercise.media)
+                ExerciseMediaView(exercise: exercise)
 
                 tagRow
 

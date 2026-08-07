@@ -3,6 +3,7 @@ import SwiftData
 
 struct RootView: View {
     @Environment(AppState.self) private var appState
+    @Environment(MediaService.self) private var mediaService
     @Query private var profiles: [UserProfile]
 
     var body: some View {
@@ -20,6 +21,9 @@ struct RootView: View {
         .sheet(item: $appState.exerciseToAdd) { exercise in
             AddToWorkoutSheet(exercise: exercise)
                 .presentationDetents([.medium, .large])
+        }
+        .task {
+            await mediaService.refresh()
         }
     }
 
