@@ -12,6 +12,9 @@
  * Configuration (environment variables):
  *   PORT         default 4000
  *   ADMIN_TOKEN  token required to upload/delete. Defaults to "muscle-admin" — change it.
+ *   VIDEOS_DIR   where uploads are stored. Default ./videos — point this at a
+ *                persistent volume (e.g. /data/videos) when deploying to a PaaS,
+ *                or uploads are lost on every restart/redeploy.
  */
 
 const express = require('express');
@@ -22,7 +25,7 @@ const path = require('path');
 
 const PORT = process.env.PORT || 4000;
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'muscle-admin';
-const VIDEOS_DIR = path.join(__dirname, 'videos');
+const VIDEOS_DIR = process.env.VIDEOS_DIR || path.join(__dirname, 'videos');
 const ALLOWED_EXT = new Set(['.mp4', '.mov', '.m4v', '.webm']);
 const MAX_SIZE_MB = 300;
 

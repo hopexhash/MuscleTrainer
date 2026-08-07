@@ -1,0 +1,20 @@
+# Render blueprint — deploy the MuscleTrainer media server with one click:
+# https://dashboard.render.com/blueprints → New Blueprint Instance → pick this repo.
+# The persistent disk requires the Starter plan (free instances lose uploads on restart).
+services:
+  - type: web
+    name: muscletrainer-media
+    runtime: node
+    plan: starter
+    rootDir: backend
+    buildCommand: npm ci --omit=dev
+    startCommand: node server.js
+    envVars:
+      - key: ADMIN_TOKEN
+        sync: false # you will be prompted for your secret token on first deploy
+      - key: VIDEOS_DIR
+        value: /data/videos
+    disk:
+      name: exercise-videos
+      mountPath: /data
+      sizeGB: 10

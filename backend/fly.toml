@@ -1,0 +1,25 @@
+# Fly.io config — from the backend/ directory run:
+#   fly launch --no-deploy   (accept this config, pick a region near you)
+#   fly volumes create exercise_videos --size 10
+#   fly secrets set ADMIN_TOKEN=pick-a-secret
+#   fly deploy
+app = "muscletrainer-media"
+primary_region = "ams"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "4000"
+  VIDEOS_DIR = "/data/videos"
+
+[[mounts]]
+  source = "exercise_videos"
+  destination = "/data"
+
+[http_service]
+  internal_port = 4000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
