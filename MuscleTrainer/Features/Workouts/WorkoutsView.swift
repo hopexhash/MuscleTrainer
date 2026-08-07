@@ -96,34 +96,65 @@ struct WorkoutsView: View {
 struct WorkoutCard: View {
     let workout: Workout
 
+    @Environment(AppState.self) private var appState
+
     var body: some View {
-        VStack(alignment: .leading, spacing: DS.spacingS) {
-            HStack {
-                Text(workout.name)
-                    .font(AppFont.cardTitle)
-                    .foregroundStyle(AppColor.textPrimary)
-                if workout.isAIGenerated {
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 12))
-                        .foregroundStyle(AppColor.accent)
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 8) {
+                        Text(workout.name)
+                            .font(.system(size: 18, weight: .semibold))
+                            .kerning(-0.4)
+                            .foregroundStyle(AppColor.textPrimary)
+                            .lineLimit(1)
+                        if workout.isAIGenerated {
+                            Text("AI")
+                                .font(.system(size: 9.5, weight: .bold))
+                                .kerning(0.8)
+                                .foregroundStyle(AppColor.accentBright)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2.5)
+                                .background(AppColor.accent.opacity(0.12))
+                                .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+                        }
+                    }
+                    Text(workout.targetMuscles.prefix(3).map(\.displayName).joined(separator: " • "))
+                        .font(.system(size: 13))
+                        .foregroundStyle(AppColor.textSecondary)
+                        .lineLimit(1)
                 }
                 Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(AppColor.textSecondary)
+                Button {
+                    appState.startWorkout(workout)
+                } label: {
+                    Image(systemName: "play.fill")
+                        .font(.system(size: 14))
+                        .foregroundStyle(.white)
+                        .frame(width: 44, height: 44)
+                        .background(AppColor.accent)
+                        .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+                }
+                .buttonStyle(PressableStyle())
+                .accessibilityLabel("Start \(workout.name)")
             }
-            Text("\(workout.exercises.count) exercises • ~\(workout.estimatedMinutes) min")
-                .font(AppFont.meta)
-                .foregroundStyle(AppColor.textSecondary)
-            if !workout.targetMuscles.isEmpty {
-                Text(workout.targetMuscles.prefix(4).map(\.displayName).joined(separator: " • "))
-                    .font(AppFont.metaSmall)
-                    .foregroundStyle(AppColor.accent)
-                    .lineLimit(1)
+            HStack(spacing: 14) {
+                Text("\(workout.exercises.count) exercises")
+                Text("~\(workout.estimatedMinutes) min")
+                Spacer()
+            }
+            .font(.system(size: 12.5))
+            .foregroundStyle(AppColor.textTertiary)
+            .padding(.top, 13)
+            .overlay(alignment: .top) {
+                Rectangle()
+                    .fill(Color.white.opacity(0.05))
+                    .frame(height: 1)
+                    .padding(.top, 6)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .cardStyle()
+        .cardStyle(radius: DS.radiusL)
     }
 }
 

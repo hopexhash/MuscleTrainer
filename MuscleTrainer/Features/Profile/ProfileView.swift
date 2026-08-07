@@ -31,22 +31,45 @@ struct ProfileView: View {
                 HStack(spacing: DS.spacing) {
                     ZStack {
                         Circle()
-                            .fill(AppColor.accent.opacity(0.15))
-                            .frame(width: 64, height: 64)
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        Color(red: 0.118, green: 0.306, blue: 0.502),
+                                        AppColor.bodyLimb,
+                                    ],
+                                    startPoint: .topLeading, endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 60, height: 60)
+                            .overlay(Circle().strokeBorder(Color.white.opacity(0.08), lineWidth: 1))
                         Text(initials(profile.name))
-                            .font(AppFont.sectionTitle)
-                            .foregroundStyle(AppColor.accent)
+                            .font(.system(size: 22, weight: .semibold))
+                            .kerning(-0.5)
+                            .foregroundStyle(.white)
                     }
-                    VStack(alignment: .leading, spacing: 3) {
+                    VStack(alignment: .leading, spacing: 6) {
                         TextField("Name", text: $profile.name)
-                            .font(AppFont.sectionTitle)
+                            .font(.system(size: 22, weight: .bold))
                             .foregroundStyle(AppColor.textPrimary)
-                        Text("\(profile.goal.displayName) • \(profile.experience.displayName)")
-                            .font(AppFont.meta)
-                            .foregroundStyle(AppColor.textSecondary)
+                        HStack(spacing: 7) {
+                            Text(profile.goal.displayName)
+                                .font(.system(size: 11.5, weight: .semibold))
+                                .foregroundStyle(AppColor.accentBright)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 3)
+                                .background(AppColor.accent.opacity(0.12))
+                                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                            Text(profile.experience.displayName)
+                                .font(.system(size: 11.5, weight: .semibold))
+                                .foregroundStyle(AppColor.textSecondary)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 3)
+                                .background(AppColor.surface)
+                                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                        }
                         Text("\(sessions.count) workouts completed")
                             .font(AppFont.metaSmall)
-                            .foregroundStyle(AppColor.accent)
+                            .foregroundStyle(AppColor.textTertiary)
                     }
                 }
                 .padding(.vertical, DS.spacingS)

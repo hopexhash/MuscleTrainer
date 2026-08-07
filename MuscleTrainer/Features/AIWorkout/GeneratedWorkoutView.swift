@@ -11,6 +11,7 @@ struct GeneratedWorkoutView: View {
 
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var context
+    @Query private var profiles: [UserProfile]
 
     @State private var swappingItem: GeneratedWorkout.GeneratedItem?
     @State private var didSave = false
@@ -19,16 +20,24 @@ struct GeneratedWorkoutView: View {
         VStack(spacing: 0) {
             List {
                 Section {
-                    summaryHeader
+                    header
                         .listRowInsets(EdgeInsets())
                         .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
                 }
 
                 Section {
                     ForEach($workout.items) { $item in
-                        GeneratedItemRow(item: $item) {
+                        GeneratedItemRow(
+                            item: $item,
+                            number: (workout.items.firstIndex { $0.id == item.id } ?? 0) + 1,
+                            gender: profiles.first?.anatomyGender ?? .male
+                        ) {
                             swappingItem = item
                         }
+                        .listRowInsets(EdgeInsets(top: 5, leading: DS.spacingL, bottom: 5, trailing: DS.spacingL))
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
                     }
                     .onDelete { offsets in
                         workout.items.remove(atOffsets: offsets)
@@ -39,27 +48,24 @@ struct GeneratedWorkoutView: View {
                         pushUpdate()
                     }
                 }
-                .listRowBackground(AppColor.card)
-
-                Section {
-                    aiActions
-                        .listRowInsets(EdgeInsets())
-                        .listRowBackground(Color.clear)
-                }
             }
+            .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .background(AppColor.background)
 
             bottomBar
         }
-        .navigationTitle(workout.name)
-        .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                Button("Close") { onDone() }
+        .background(AppColor.background)
+        .toolbar(.hidden, for: .navigationBar)
+        .safeAreaInset(edge: .top, spacing: 0) {
+            HStack {
+                CircleIconButton(icon: "chevron.left", label: "Close") { onDone() }
+                Spacer()
+                MicroLabel(text: "AI Generated", color: AppColor.accentBright)
             }
-            ToolbarItem(placement: .topBarTrailing) {
-                EditButton()
-            }
+            .padding(.horizontal, DS.spacingL)
+            .padding(.vertical, DS.spacingS)
+            .background(AppColor.background)
         }
         .sheet(item: $swappingItem) { item in
             SwapExerciseSheet(item: item, equipment: request.equipment) { replacement in
@@ -79,73 +85,100 @@ struct GeneratedWorkoutView: View {
 
     // MARK: - Header
 
-    private var summaryHeader: some View {
-        VStack(alignment: .leading, spacing: DS.spacingS) {
-            HStack(spacing: DS.spacingM) {
-                Label("~\(workout.estimatedMinutes) min", systemImage: "clock")
-                Label(workout.goal.displayName, systemImage: workout.goal.icon)
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(workout.name)
+                .font(.system(size: 32, weight: .bold))
+                .kerning(-1.1)
+                .foregroundStyle(AppColor.textPrimary)
+            Text(workout.targetMuscles.prefix(4).map(\.displayName).joined(separator: " • "))
+                .font(.system(size: 14))
+                .foregroundStyle(AppColor.textSecondary)
+                .padding(.top, 5)
+
+            HStack(spacing: 0) {
+                stat("\(workout.items.count)", "exercises")
+                stat("~\(workout.estimatedMinutes)", "minutes")
+                stat(workout.goal.displayName, "goal")
             }
-            .font(AppFont.meta)
-            .foregroundStyle(AppColor.textSecondary)
-            if !workout.targetMuscles.isEmpty {
-                Text(workout.targetMuscles.prefix(5).map(\.displayName).joined(separator: " • "))
-                    .font(AppFont.meta)
-                    .foregroundStyle(AppColor.accent)
+            .padding(.vertical, DS.spacing)
+            .background(
+                LinearGradient(
+                    colors: [AppColor.segmentOn.opacity(0.7), AppColor.card],
+                    startPoint: .topLeading, endPoint: .bottomTrailing
+                )
+            )
+            .clipShape(RoundedRectangle(cornerRadius: DS.radiusL, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: DS.radiusL, style: .continuous)
+                    .strokeBorder(AppColor.border, lineWidth: 1)
+            )
+            .padding(.top, DS.spacing)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 7) {
+                    quickChip("Make easier", icon: "tortoise") { makeEasier() }
+                    quickChip("Make harder", icon: "hare") { makeHarder() }
+                    quickChip("Shorten", icon: "scissors") { shorten() }
+                    quickChip("Regenerate", icon: "arrow.clockwise") { onRegenerate() }
+                }
             }
+            .padding(.top, DS.spacingM)
         }
-        .padding(.vertical, DS.spacingS)
+        .padding(.horizontal, DS.spacingL)
+        .padding(.bottom, DS.spacingS)
     }
 
-    // MARK: - AI adjustments
-
-    private var aiActions: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: DS.spacingS) {
-                aiActionChip("Make easier", icon: "tortoise.fill") { makeEasier() }
-                aiActionChip("Make harder", icon: "hare.fill") { makeHarder() }
-                aiActionChip("Shorten", icon: "scissors") { shorten() }
-                aiActionChip("Regenerate", icon: "arrow.clockwise") { onRegenerate() }
-            }
-            .padding(.vertical, DS.spacingS)
+    private func stat(_ value: String, _ label: String) -> some View {
+        VStack(spacing: 2) {
+            Text(value)
+                .font(.system(size: 21, weight: .bold))
+                .kerning(-0.6)
+                .foregroundStyle(AppColor.textPrimary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+            Text(label)
+                .font(.system(size: 11.5))
+                .foregroundStyle(AppColor.textTertiary)
         }
+        .frame(maxWidth: .infinity)
     }
 
-    private func aiActionChip(_ title: String, icon: String, action: @escaping () -> Void) -> some View {
+    private func quickChip(_ title: String, icon: String, action: @escaping () -> Void) -> some View {
         Button {
             Haptics.selection()
             action()
         } label: {
-            HStack(spacing: 6) {
+            HStack(spacing: 5) {
                 Image(systemName: icon)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: 11, weight: .semibold))
                 Text(title)
-                    .font(AppFont.meta)
+                    .font(.system(size: 12.5, weight: .medium))
             }
-            .foregroundStyle(AppColor.accent)
-            .padding(.horizontal, 14)
-            .frame(height: 34)
-            .background(AppColor.accent.opacity(0.12))
+            .foregroundStyle(AppColor.textPrimary.opacity(0.8))
+            .padding(.horizontal, 13)
+            .frame(height: 32)
+            .background(AppColor.surface)
             .clipShape(Capsule())
+            .overlay(Capsule().strokeBorder(AppColor.border, lineWidth: 1))
         }
         .buttonStyle(PressableStyle())
     }
 
+    // MARK: - AI adjustments
+
     private func makeEasier() {
         for index in workout.items.indices {
-            var item = workout.items[index]
-            item.sets = max(2, item.sets - 1)
-            item.restSeconds = min(240, item.restSeconds + 15)
-            workout.items[index] = item
+            workout.items[index].sets = max(2, workout.items[index].sets - 1)
+            workout.items[index].restSeconds = min(240, workout.items[index].restSeconds + 15)
         }
         recalcDuration()
     }
 
     private func makeHarder() {
         for index in workout.items.indices {
-            var item = workout.items[index]
-            item.sets = min(6, item.sets + 1)
-            item.restSeconds = max(30, item.restSeconds - 15)
-            workout.items[index] = item
+            workout.items[index].sets = min(6, workout.items[index].sets + 1)
+            workout.items[index].restSeconds = max(30, workout.items[index].restSeconds - 15)
         }
         recalcDuration()
     }
@@ -170,15 +203,28 @@ struct GeneratedWorkoutView: View {
 
     private var bottomBar: some View {
         HStack(spacing: DS.spacingM) {
-            SecondaryButton(title: didSave ? "Saved ✓" : "Save Workout", icon: didSave ? nil : "square.and.arrow.down") {
-                saveWorkout()
-            }
-            PrimaryButton(title: "Start Workout", icon: "play.fill", isEnabled: !workout.items.isEmpty) {
+            PrimaryButton(title: "Start Workout", isEnabled: !workout.items.isEmpty) {
                 startWorkout()
             }
+            Button {
+                saveWorkout()
+            } label: {
+                Text(didSave ? "Saved ✓" : "Save")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(didSave ? AppColor.success : AppColor.textPrimary.opacity(0.85))
+                    .frame(width: 100, height: DS.buttonHeight)
+                    .background(AppColor.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: DS.radius, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: DS.radius, style: .continuous)
+                            .strokeBorder(AppColor.border, lineWidth: 1)
+                    )
+            }
+            .buttonStyle(PressableStyle())
         }
-        .padding(DS.spacing)
-        .background(.ultraThinMaterial)
+        .padding(.horizontal, DS.spacingL)
+        .padding(.vertical, DS.spacingM)
+        .background(AppColor.background)
     }
 
     @discardableResult
@@ -225,44 +271,61 @@ struct GeneratedWorkoutView: View {
 
 private struct GeneratedItemRow: View {
     @Binding var item: GeneratedWorkout.GeneratedItem
+    let number: Int
+    let gender: AnatomyGender
     let onSwap: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: DS.spacingS) {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(item.exercise.name)
-                        .font(AppFont.cardTitle)
-                        .foregroundStyle(AppColor.textPrimary)
-                    Text("\(item.exercise.primaryMuscle.displayName) • \(item.exercise.equipment.first?.displayName ?? "")")
-                        .font(AppFont.metaSmall)
-                        .foregroundStyle(AppColor.textSecondary)
-                }
-                Spacer()
-                Button("Swap", action: onSwap)
-                    .font(AppFont.meta)
-                    .foregroundStyle(AppColor.accent)
-                    .buttonStyle(.borderless)
-            }
-            HStack {
-                Text("\(item.sets) × \(item.repsLow)–\(item.repsHigh)")
-                    .font(AppFont.meta)
-                    .foregroundStyle(AppColor.accent)
-                Spacer()
-                Text("Rest: \(item.restSeconds) sec")
-                    .font(AppFont.meta)
+        HStack(spacing: 12) {
+            Text(String(format: "%02d", number))
+                .font(.system(size: 12, weight: .bold))
+                .foregroundStyle(AppColor.textFaint)
+                .monospacedDigit()
+
+            AnatomyFigureView(
+                side: item.exercise.primaryMuscle.isBackFacing ? .back : .front,
+                gender: gender,
+                selectedMuscles: Set(item.exercise.primaryMuscles),
+                isInteractive: false
+            )
+            .frame(width: 46, height: 52)
+            .padding(2)
+            .background(AppColor.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
+            .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(item.exercise.name)
+                    .font(.system(size: 15, weight: .semibold))
+                    .kerning(-0.3)
+                    .foregroundStyle(AppColor.textPrimary)
+                    .lineLimit(1)
+                Text("\(item.sets) sets × \(item.repsLow)–\(item.repsHigh) reps")
+                    .font(.system(size: 12.5))
                     .foregroundStyle(AppColor.textSecondary)
+                Text("\(item.restSeconds) sec rest")
+                    .font(.system(size: 11.5))
+                    .foregroundStyle(AppColor.textTertiary)
             }
-            HStack(spacing: DS.spacing) {
-                Stepper("Sets: \(item.sets)", value: $item.sets, in: 1...8)
-                    .font(AppFont.metaSmall)
-                    .foregroundStyle(AppColor.textSecondary)
-            }
-            Stepper("Rest: \(item.restSeconds)s", value: $item.restSeconds, in: 15...300, step: 15)
-                .font(AppFont.metaSmall)
-                .foregroundStyle(AppColor.textSecondary)
+
+            Spacer()
+
+            Button("Swap", action: onSwap)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(AppColor.accentBright)
+                .buttonStyle(.borderless)
+
+            Image(systemName: "line.3.horizontal")
+                .font(.system(size: 12))
+                .foregroundStyle(AppColor.textSecondary.opacity(0.4))
         }
-        .padding(.vertical, 2)
+        .padding(DS.spacingM)
+        .background(AppColor.card)
+        .clipShape(RoundedRectangle(cornerRadius: DS.radiusCard, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: DS.radiusCard, style: .continuous)
+                .strokeBorder(AppColor.border, lineWidth: 1)
+        )
     }
 }
 
@@ -286,6 +349,7 @@ private struct SwapExerciseSheet: View {
                     Text("No similar exercises available for your equipment.")
                         .font(AppFont.body)
                         .foregroundStyle(AppColor.textSecondary)
+                        .listRowBackground(AppColor.card)
                 } else {
                     ForEach(alternatives) { alternative in
                         Button {
@@ -302,10 +366,10 @@ private struct SwapExerciseSheet: View {
                                     .foregroundStyle(AppColor.textSecondary)
                             }
                         }
+                        .listRowBackground(AppColor.card)
                     }
                 }
             }
-            .listRowBackground(AppColor.card)
             .scrollContentBackground(.hidden)
             .background(AppColor.background)
             .navigationTitle("Swap \(item.exercise.name)")

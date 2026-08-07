@@ -45,8 +45,23 @@ final class ActiveWorkoutController: Identifiable {
 
     // Rest timer.
     private(set) var restRemaining: Int = 0
+    private(set) var restTotal: Int = 0
     var isResting: Bool { restRemaining > 0 }
     private var restTask: Task<Void, Never>?
+
+    var restFraction: Double {
+        guard restTotal > 0 else { return 0 }
+        return Double(restRemaining) / Double(restTotal)
+    }
+
+    /// What comes after this rest: the next set of the current exercise, or the next exercise.
+    var upNext: (exercise: Exercise, label: String)? {
+        guard let item = currentItem else { return nil }
+        if setNumber <= item.sets {
+            return (item.exercise, "Set \(setNumber) of \(item.sets) · \(item.repsLow)–\(item.repsHigh) reps")
+        }
+        return nil
+    }
 
     init(workout: Workout, discardWorkoutOnEnd: Bool = false) {
         self.workoutName = workout.name
@@ -138,6 +153,7 @@ final class ActiveWorkoutController: Identifiable {
     func startRest(seconds: Int) {
         cancelRest()
         restRemaining = seconds
+        restTotal = seconds
         restTask = Task { [weak self] in
             while let self, self.restRemaining > 0, !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(1))

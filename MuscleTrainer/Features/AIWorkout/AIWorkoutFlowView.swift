@@ -50,24 +50,34 @@ struct AIWorkoutFlowView: View {
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    if phase == .questions {
-                        Button {
+            .toolbar(.hidden, for: .navigationBar)
+            .safeAreaInset(edge: .top, spacing: 0) {
+                if phase == .questions {
+                    HStack(spacing: 14) {
+                        CircleIconButton(
+                            icon: stepIndex == 0 ? "xmark" : "chevron.left",
+                            label: stepIndex == 0 ? "Close" : "Back"
+                        ) {
                             goBack()
-                        } label: {
-                            Image(systemName: stepIndex == 0 ? "xmark" : "chevron.left")
-                                .font(.system(size: 14, weight: .semibold))
                         }
-                        .accessibilityLabel(stepIndex == 0 ? "Close" : "Back")
+                        GeometryReader { proxy in
+                            ZStack(alignment: .leading) {
+                                Capsule().fill(AppColor.track)
+                                Capsule()
+                                    .fill(AppColor.accent)
+                                    .frame(width: max(6, proxy.size.width * Double(stepIndex + 1) / Double(steps.count)))
+                                    .animation(DS.smooth, value: stepIndex)
+                            }
+                        }
+                        .frame(height: 3)
+                        Text("\(stepIndex + 1)/\(steps.count)")
+                            .font(.system(size: 12.5, weight: .medium))
+                            .foregroundStyle(AppColor.textTertiary)
+                            .monospacedDigit()
                     }
-                }
-                ToolbarItem(placement: .principal) {
-                    if phase == .questions {
-                        ProgressView(value: Double(stepIndex + 1), total: Double(steps.count))
-                            .tint(AppColor.accent)
-                            .frame(width: 140)
-                    }
+                    .padding(.horizontal, DS.spacingL)
+                    .padding(.vertical, DS.spacingS)
+                    .background(AppColor.background)
                 }
             }
         }

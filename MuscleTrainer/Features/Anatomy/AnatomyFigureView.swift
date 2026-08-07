@@ -2,14 +2,16 @@ import SwiftUI
 
 /// The interactive anatomy figure.
 ///
-/// Renders the silhouette and every muscle region with a single `Canvas` pass
-/// (paths are cached per side/gender and only transformed per frame), supports
-/// tap hit-testing on real vector shapes, single or multi selection, and an
-/// optional heatmap mode driven by per-muscle intensity.
+/// Renders the capsule-anatomy skeleton and every muscle region in a single
+/// `Canvas` pass (paths are cached per side/gender and only transformed per
+/// frame). Supports tap hit-testing on real vector shapes, primary/secondary
+/// highlight levels, and a tiered heatmap mode.
 struct AnatomyFigureView: View {
     let side: BodySide
     let gender: AnatomyGender
     var selectedMuscles: Set<Muscle> = []
+    /// Secondary-worked muscles, drawn in the mid blue (#17558C).
+    var secondaryMuscles: Set<Muscle> = []
     var heatmap: [Muscle: Double]? = nil
     var isInteractive: Bool = true
     var onTap: ((Muscle) -> Void)? = nil
@@ -23,10 +25,9 @@ struct AnatomyFigureView: View {
             let regions = AnatomyShapeStore.regions(side: side, gender: gender)
 
             Canvas { context, _ in
-                let silhouette = AnatomyShapeStore.silhouette(gender: gender)
-                    .applying(transform)
-                context.fill(silhouette, with: .color(AppColor.bodyFill))
-                context.stroke(silhouette, with: .color(AppColor.border), lineWidth: 1)
+                let skeleton = AnatomyShapeStore.skeleton(gender: gender)
+                context.fill(skeleton.base.applying(transform), with: .color(AppColor.bodyFill))
+                context.fill(skeleton.limbs.applying(transform), with: .color(AppColor.bodyLimb))
 
                 let hasSelection = !selectedMuscles.isEmpty
 
@@ -34,32 +35,36 @@ struct AnatomyFigureView: View {
                     let path = region.path.applying(transform)
 
                     if let heatmap {
-                        let intensity = foldedIntensity(for: region.muscle, in: heatmap)
-                        let fill = intensity > 0.01
-                            ? AppColor.accent.opacity(0.15 + 0.75 * intensity)
-                            : AppColor.muscleIdle.opacity(0.55)
-                        context.fill(path, with: .color(fill))
+                        let value = foldedIntensity(for: region.muscle, in: heatmap)
+                        if value >= 0.7 {
+                            var glow = context
+                            glow.addFilter(.blur(radius: 5))
+                            glow.fill(path, with: .color(AppColor.accent.opacity(0.5)))
+                            context.fill(path, with: .color(AppColor.accent))
+                        } else if value >= 0.4 {
+                            context.fill(path, with: .color(AppColor.heatMid))
+                        } else if value >= 0.15 {
+                            context.fill(path, with: .color(AppColor.heatLow))
+                        } else {
+                            context.fill(path, with: .color(AppColor.muscleIdle))
+                        }
                     } else if selectedMuscles.contains(region.muscle) {
-                        // Soft glow behind the selected muscle.
                         var glow = context
-                        glow.addFilter(.blur(radius: 6))
-                        glow.fill(path, with: .color(AppColor.accentBright.opacity(0.55)))
+                        glow.addFilter(.blur(radius: 7))
+                        glow.fill(path, with: .color(AppColor.accent.opacity(0.55)))
                         context.fill(path, with: .color(AppColor.accent))
+                    } else if secondaryMuscles.contains(region.muscle) {
+                        context.fill(path, with: .color(AppColor.muscleSecondary))
                     } else {
-                        let idleOpacity = hasSelection ? 0.45 : 0.9
-                        context.fill(path, with: .color(AppColor.muscleIdle.opacity(idleOpacity)))
+                        context.fill(path, with: .color(AppColor.muscleIdle.opacity(hasSelection ? 0.4 : 1)))
                     }
-
-                    context.stroke(path, with: .color(AppColor.background.opacity(0.8)), lineWidth: 1)
                 }
             }
             .contentShape(Rectangle())
             .onTapGesture { location in
                 guard isInteractive, let onTap else { return }
                 // Hit-test in design space to reuse cached, untransformed paths.
-                let inverse = transform.inverted()
-                let designPoint = location.applying(inverse)
-                // Later specs draw on top, so test in reverse order.
+                let designPoint = location.applying(transform.inverted())
                 if let hit = regions.last(where: { $0.path.contains(designPoint) }) {
                     Haptics.light()
                     onTap(hit.muscle)
@@ -82,6 +87,7 @@ struct AnatomyFigureView: View {
         var value = heatmap[muscle] ?? 0
         if muscle == .chest { value = max(value, heatmap[.upperChest] ?? 0) }
         if muscle == .traps { value = max(value, heatmap[.neck] ?? 0) }
+        if muscle == .quads { value = max(value, heatmap[.hipFlexors] ?? 0) }
         return value
     }
 }
@@ -106,5 +112,36 @@ struct MuscleHeatmapView: View {
     private var accessibilitySummary: String {
         let top = heatmap.sorted { $0.value > $1.value }.prefix(3).map { $0.key.displayName }
         return top.isEmpty ? "Muscle heatmap" : "Muscle heatmap. Most trained: \(top.joined(separator: ", "))"
+    }
+}
+
+/// Tiny figure with an exercise's muscles lit — used as a thumbnail.
+struct ExerciseFigureThumb: View {
+    let exercise: Exercise
+    var gender: AnatomyGender = .male
+
+    var body: some View {
+        let primary = Set(exercise.primaryMuscles)
+        let side: BodySide = exercise.primaryMuscle.isBackFacing ? .back : .front
+        AnatomyFigureView(
+            side: side,
+            gender: gender,
+            selectedMuscles: primary,
+            secondaryMuscles: Set(exercise.secondaryMuscles),
+            isInteractive: false
+        )
+        .accessibilityHidden(true)
+    }
+}
+
+extension Muscle {
+    /// Whether this muscle is best shown on the back view of the figure.
+    var isBackFacing: Bool {
+        switch self {
+        case .traps, .rearDelts, .upperBack, .lats, .lowerBack, .glutes, .hamstrings, .triceps, .calves:
+            return true
+        default:
+            return false
+        }
     }
 }

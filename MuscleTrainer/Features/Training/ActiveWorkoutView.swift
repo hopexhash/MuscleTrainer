@@ -26,6 +26,9 @@ struct ActiveWorkoutView: View {
                         weightUnit: weightUnit
                     ) {
                         appState.activeWorkout = nil
+                    } onViewProgress: {
+                        appState.activeWorkout = nil
+                        appState.selectedTab = .progress
                     }
                     .onAppear(perform: persistSessionIfNeeded)
                 } else if controller.plan.isEmpty {
@@ -37,8 +40,10 @@ struct ActiveWorkoutView: View {
                     ) {
                         appState.activeWorkout = nil
                     }
+                } else if controller.isResting {
+                    restContent
                 } else {
-                    playerContent
+                    setContent
                 }
             }
             .toolbar {
@@ -51,13 +56,6 @@ struct ActiveWorkoutView: View {
                                 .font(.system(size: 14, weight: .semibold))
                         }
                         .accessibilityLabel("End workout")
-                    }
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button("Finish") {
-                            controller.finish()
-                        }
-                        .font(AppFont.bodyMedium)
-                        .disabled(controller.logged.isEmpty)
                     }
                 }
             }
@@ -75,96 +73,118 @@ struct ActiveWorkoutView: View {
         .interactiveDismissDisabled()
     }
 
-    // MARK: - Player
+    // MARK: - Shared header
 
-    private var playerContent: some View {
-        VStack(spacing: DS.spacing) {
+    private func progressHeader(trailing: String? = nil) -> some View {
+        VStack(spacing: 10) {
+            HStack {
+                Text("Exercise \(controller.exerciseIndex + 1) of \(controller.plan.count)")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(AppColor.textSecondary)
+                Spacer()
+                TimelineView(.periodic(from: .now, by: 1)) { timeline in
+                    Text(elapsedLabel(at: timeline.date))
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(AppColor.textTertiary)
+                        .monospacedDigit()
+                }
+            }
+            GeometryReader { proxy in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(AppColor.track)
+                    Capsule()
+                        .fill(AppColor.accent)
+                        .frame(width: max(4, proxy.size.width * controller.progressFraction))
+                }
+            }
+            .frame(height: 3)
+        }
+        .padding(.horizontal, DS.spacingL)
+    }
+
+    private func elapsedLabel(at date: Date) -> String {
+        let seconds = max(0, Int(date.timeIntervalSince(controller.startedAt)))
+        return String(format: "%d:%02d", seconds / 60, seconds % 60)
+    }
+
+    // MARK: - Set entry
+
+    private var setContent: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            progressHeader()
+
             if let item = controller.currentItem {
-                header(item: item)
-
                 ScrollView {
-                    VStack(spacing: DS.spacing) {
-                        ExerciseMediaView(exercise: item.exercise, height: 150)
+                    VStack(alignment: .leading, spacing: 0) {
+                        ExerciseMediaView(exercise: item.exercise, height: 190)
+                            .padding(.top, DS.spacing)
 
-                        if controller.isResting {
-                            restCard
-                        } else {
-                            setCard(item: item)
+                        Text(item.exercise.name)
+                            .font(.system(size: 27, weight: .bold))
+                            .kerning(-0.7)
+                            .foregroundStyle(AppColor.textPrimary)
+                            .padding(.top, DS.spacingL)
+
+                        HStack(spacing: 10) {
+                            Text("Set \(controller.setNumber) of \(item.sets)")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundStyle(AppColor.accentBright)
+                            Circle()
+                                .fill(AppColor.textFaint)
+                                .frame(width: 3, height: 3)
+                            Text("Goal \(item.repsLow)–\(item.repsHigh) reps")
+                                .font(.system(size: 14))
+                                .foregroundStyle(AppColor.textSecondary)
+                        }
+                        .padding(.top, 6)
+
+                        if let previous = controller.previousSet {
+                            Text("Previous · \(previousLabel(previous))")
+                                .font(.system(size: 13))
+                                .foregroundStyle(AppColor.textTertiary)
+                                .padding(.top, 4)
                         }
 
-                        loggedList
+                        HStack(spacing: DS.spacingM) {
+                            if item.exercise.isWeighted {
+                                InputCard(
+                                    label: "WEIGHT",
+                                    value: formattedWeight,
+                                    unit: weightUnit,
+                                    onMinus: { controller.weightInput = max(0, controller.weightInput - 2.5) },
+                                    onPlus: { controller.weightInput += 2.5 }
+                                )
+                            }
+                            InputCard(
+                                label: "REPS",
+                                value: "\(controller.repsInput)",
+                                unit: nil,
+                                onMinus: { controller.repsInput = max(1, controller.repsInput - 1) },
+                                onPlus: { controller.repsInput += 1 }
+                            )
+                        }
+                        .padding(.top, DS.spacingL)
                     }
-                    .padding(.horizontal, DS.spacing)
-                }
-
-                Spacer(minLength: 0)
-
-                bottomBar(item: item)
-            }
-        }
-    }
-
-    private func header(item: ActiveWorkoutController.PlanItem) -> some View {
-        VStack(spacing: DS.spacingS) {
-            Text("Exercise \(controller.exerciseIndex + 1) of \(controller.plan.count)")
-                .font(AppFont.metaSmall)
-                .foregroundStyle(AppColor.textSecondary)
-                .textCase(.uppercase)
-            Text(item.exercise.name)
-                .font(AppFont.pageTitle)
-                .foregroundStyle(AppColor.textPrimary)
-                .multilineTextAlignment(.center)
-                .lineLimit(2)
-                .minimumScaleFactor(0.7)
-            ProgressView(value: controller.progressFraction)
-                .tint(AppColor.accent)
-                .padding(.horizontal, DS.spacingXL)
-        }
-        .padding(.horizontal, DS.spacing)
-    }
-
-    private func setCard(item: ActiveWorkoutController.PlanItem) -> some View {
-        VStack(spacing: DS.spacing) {
-            HStack {
-                Text("SET \(controller.setNumber) / \(item.sets)")
-                    .font(AppFont.sectionTitle)
-                    .foregroundStyle(AppColor.textPrimary)
-                Spacer()
-                Text("Target: \(item.repsLow == item.repsHigh ? "\(item.repsLow)" : "\(item.repsLow)–\(item.repsHigh)") reps")
-                    .font(AppFont.meta)
-                    .foregroundStyle(AppColor.accent)
-            }
-
-            if let previous = controller.previousSet {
-                HStack {
-                    Text("Previous")
-                        .font(AppFont.meta)
-                        .foregroundStyle(AppColor.textSecondary)
-                    Spacer()
-                    Text(previousLabel(previous))
-                        .font(AppFont.meta)
-                        .foregroundStyle(AppColor.textPrimary)
+                    .padding(.horizontal, DS.spacingL)
                 }
             }
 
-            HStack(spacing: DS.spacingM) {
-                if item.exercise.isWeighted {
-                    stepperField(
-                        label: "Weight (\(weightUnit))",
-                        value: formattedWeight,
-                        onMinus: { controller.weightInput = max(0, controller.weightInput - 2.5) },
-                        onPlus: { controller.weightInput += 2.5 }
-                    )
+            Spacer(minLength: 0)
+
+            VStack(spacing: DS.spacingM) {
+                PrimaryButton(title: "Complete Set", isEnabled: true) {
+                    controller.completeSet()
                 }
-                stepperField(
-                    label: "Reps",
-                    value: "\(controller.repsInput)",
-                    onMinus: { controller.repsInput = max(1, controller.repsInput - 1) },
-                    onPlus: { controller.repsInput += 1 }
-                )
+                Button("Skip exercise") {
+                    Haptics.selection()
+                    controller.skipExercise()
+                }
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(AppColor.textTertiary)
             }
+            .padding(.horizontal, DS.spacingL)
+            .padding(.bottom, DS.spacingS)
         }
-        .cardStyle(padding: DS.spacingL)
     }
 
     private var formattedWeight: String {
@@ -177,120 +197,111 @@ struct ActiveWorkoutView: View {
         set.weight > 0 ? "\(Int(set.weight)) \(weightUnit) × \(set.reps)" : "\(set.reps) reps"
     }
 
-    private func stepperField(label: String, value: String, onMinus: @escaping () -> Void, onPlus: @escaping () -> Void) -> some View {
-        VStack(spacing: DS.spacingS) {
-            Text(label)
-                .font(AppFont.metaSmall)
-                .foregroundStyle(AppColor.textSecondary)
-            HStack(spacing: 0) {
-                stepButton(icon: "minus", action: onMinus)
-                Text(value)
-                    .font(AppFont.statValue)
-                    .foregroundStyle(AppColor.textPrimary)
-                    .frame(maxWidth: .infinity)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
-                stepButton(icon: "plus", action: onPlus)
-            }
-        }
-        .padding(DS.spacingM)
-        .background(AppColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: DS.radius, style: .continuous))
-        .frame(maxWidth: .infinity)
-    }
-
-    private func stepButton(icon: String, action: @escaping () -> Void) -> some View {
-        Button {
-            Haptics.selection()
-            action()
-        } label: {
-            Image(systemName: icon)
-                .font(.system(size: 15, weight: .bold))
-                .foregroundStyle(AppColor.textPrimary)
-                .frame(width: 40, height: 40)
-                .background(AppColor.card)
-                .clipShape(Circle())
-        }
-        .buttonStyle(PressableStyle())
-        .accessibilityLabel(icon == "plus" ? "Increase" : "Decrease")
-    }
-
     // MARK: - Rest
 
-    private var restCard: some View {
-        VStack(spacing: DS.spacing) {
-            Text("REST")
-                .font(AppFont.metaSmall)
+    private var restContent: some View {
+        VStack(spacing: 0) {
+            Text("Rest before your next set")
+                .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(AppColor.textSecondary)
-                .textCase(.uppercase)
-            Text(controller.restLabel)
-                .font(AppFont.timer)
-                .foregroundStyle(AppColor.accent)
-                .monospacedDigit()
-                .contentTransition(.numericText())
-                .animation(.default, value: controller.restRemaining)
-            HStack(spacing: DS.spacingM) {
-                SecondaryButton(title: "+15 sec") {
-                    controller.addRest(seconds: 15)
-                }
-                SecondaryButton(title: "Skip") {
-                    Haptics.selection()
-                    controller.skipRest()
+                .padding(.top, DS.spacingS)
+
+            Spacer()
+
+            ZStack {
+                Circle()
+                    .stroke(AppColor.surface, lineWidth: 8)
+                Circle()
+                    .trim(from: 0, to: controller.restFraction)
+                    .stroke(AppColor.accent, style: StrokeStyle(lineWidth: 8, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                    .animation(.linear(duration: 1), value: controller.restRemaining)
+                VStack(spacing: 2) {
+                    Text(controller.restLabel)
+                        .font(AppFont.timer)
+                        .kerning(-2)
+                        .foregroundStyle(AppColor.textPrimary)
+                        .monospacedDigit()
+                        .contentTransition(.numericText())
+                    MicroLabel(text: "Remaining")
                 }
             }
-        }
-        .cardStyle(padding: DS.spacingL)
-    }
+            .frame(width: 236, height: 236)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Rest timer: \(controller.restLabel) remaining")
 
-    // MARK: - Logged sets
+            HStack(spacing: DS.spacingM) {
+                Button {
+                    controller.addRest(seconds: 15)
+                } label: {
+                    Text("+15 sec")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(AppColor.textPrimary.opacity(0.85))
+                        .padding(.horizontal, 22)
+                        .frame(height: 46)
+                        .background(AppColor.surface)
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .strokeBorder(AppColor.border, lineWidth: 1)
+                        )
+                }
+                .buttonStyle(PressableStyle())
 
-    private var loggedList: some View {
-        Group {
-            if let item = controller.currentItem {
-                let sets = controller.logged.filter { $0.exerciseID == item.exercise.id }
-                if !sets.isEmpty {
-                    VStack(alignment: .leading, spacing: DS.spacingS) {
-                        ForEach(sets) { set in
-                            HStack {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .font(.system(size: 13))
-                                    .foregroundStyle(AppColor.success)
-                                Text("Set \(set.setNumber)")
-                                    .font(AppFont.meta)
-                                    .foregroundStyle(AppColor.textSecondary)
-                                Spacer()
-                                Text(previousLabel(set))
-                                    .font(AppFont.meta)
-                                    .foregroundStyle(AppColor.textPrimary)
-                            }
+                Button {
+                    Haptics.selection()
+                    controller.skipRest()
+                } label: {
+                    Text("Skip")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 26)
+                        .frame(height: 46)
+                        .background(AppColor.accent)
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                }
+                .buttonStyle(PressableStyle())
+            }
+            .padding(.top, DS.spacingXL)
+
+            Spacer()
+
+            if let next = controller.upNext {
+                VStack(alignment: .leading, spacing: 10) {
+                    MicroLabel(text: "Up next")
+                    HStack(spacing: 13) {
+                        AnatomyFigureView(
+                            side: next.exercise.primaryMuscle.isBackFacing ? .back : .front,
+                            gender: profiles.first?.anatomyGender ?? .male,
+                            selectedMuscles: Set(next.exercise.primaryMuscles),
+                            isInteractive: false
+                        )
+                        .frame(width: 44, height: 50)
+                        .accessibilityHidden(true)
+
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(next.exercise.name)
+                                .font(.system(size: 15.5, weight: .semibold))
+                                .foregroundStyle(AppColor.textPrimary)
+                            Text(next.label)
+                                .font(.system(size: 12.5))
+                                .foregroundStyle(AppColor.textSecondary)
                         }
+                        Spacer()
                     }
                     .cardStyle(padding: DS.spacingM)
                 }
+                .padding(.horizontal, DS.spacingL)
+                .padding(.bottom, DS.spacingL)
             }
         }
-    }
-
-    // MARK: - Bottom bar
-
-    private func bottomBar(item: ActiveWorkoutController.PlanItem) -> some View {
-        VStack(spacing: DS.spacingS) {
-            PrimaryButton(
-                title: controller.isResting ? "Resting…" : "Complete Set",
-                icon: controller.isResting ? nil : "checkmark",
-                isEnabled: !controller.isResting
-            ) {
-                controller.completeSet()
-            }
-            Button("Skip exercise") {
-                Haptics.selection()
-                controller.skipExercise()
-            }
-            .font(AppFont.meta)
-            .foregroundStyle(AppColor.textSecondary)
-        }
-        .padding(.horizontal, DS.spacing)
-        .padding(.bottom, DS.spacingS)
+        .background(
+            RadialGradient(
+                colors: [AppColor.accent.opacity(0.12), .clear],
+                center: UnitPoint(x: 0.5, y: 0.35),
+                startRadius: 0, endRadius: 300
+            )
+        )
     }
 
     // MARK: - Persistence
@@ -327,6 +338,60 @@ struct ActiveWorkoutView: View {
     }
 }
 
+// MARK: - Weight/reps input card
+
+private struct InputCard: View {
+    let label: String
+    let value: String
+    let unit: String?
+    let onMinus: () -> Void
+    let onPlus: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            MicroLabel(text: label)
+            HStack(alignment: .firstTextBaseline, spacing: 5) {
+                Text(value)
+                    .font(.system(size: 30, weight: .bold))
+                    .kerning(-1)
+                    .foregroundStyle(AppColor.textPrimary)
+                    .monospacedDigit()
+                    .contentTransition(.numericText())
+                if let unit {
+                    Text(unit)
+                        .font(.system(size: 14))
+                        .foregroundStyle(AppColor.textTertiary)
+                }
+            }
+            .padding(.top, 6)
+            HStack(spacing: 7) {
+                stepButton("minus", action: onMinus)
+                stepButton("plus", action: onPlus)
+            }
+            .padding(.top, 10)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .cardStyle(padding: DS.spacing)
+    }
+
+    private func stepButton(_ icon: String, action: @escaping () -> Void) -> some View {
+        Button {
+            Haptics.selection()
+            action()
+        } label: {
+            Image(systemName: icon)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(AppColor.textSecondary)
+                .frame(maxWidth: .infinity)
+                .frame(height: 32)
+                .background(AppColor.control)
+                .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+        }
+        .buttonStyle(PressableStyle())
+        .accessibilityLabel(icon == "plus" ? "Increase \(label.lowercased())" : "Decrease \(label.lowercased())")
+    }
+}
+
 // MARK: - Completion screen
 
 struct WorkoutCompleteView: View {
@@ -335,39 +400,90 @@ struct WorkoutCompleteView: View {
     let gender: AnatomyGender
     let weightUnit: String
     let onDone: () -> Void
+    var onViewProgress: (() -> Void)? = nil
 
     var body: some View {
         ScrollView {
-            VStack(spacing: DS.spacingL) {
-                Image(systemName: "checkmark.seal.fill")
-                    .font(.system(size: 56))
-                    .foregroundStyle(AppColor.accent)
-                    .padding(.top, DS.spacingXL)
+            VStack(alignment: .leading, spacing: 0) {
+                ZStack {
+                    Circle()
+                        .fill(AppColor.accent.opacity(0.14))
+                    Circle()
+                        .strokeBorder(AppColor.accent.opacity(0.3), lineWidth: 1)
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundStyle(AppColor.accentBright)
+                }
+                .frame(width: 58, height: 58)
+                .padding(.top, DS.spacing)
 
-                Text("Workout Complete")
-                    .font(AppFont.pageTitle)
+                Text("Workout complete")
+                    .font(.system(size: 32, weight: .bold))
+                    .kerning(-1)
                     .foregroundStyle(AppColor.textPrimary)
+                    .padding(.top, DS.spacingL)
 
-                Text(controller.workoutName)
-                    .font(AppFont.body)
+                Text("Great session.")
+                    .font(.system(size: 16))
                     .foregroundStyle(AppColor.textSecondary)
+                    .padding(.top, 6)
 
                 statsGrid
+                    .padding(.top, DS.spacingL)
 
                 if let session, !session.muscleIntensity.isEmpty {
-                    VStack(alignment: .leading, spacing: DS.spacingM) {
-                        SectionHeader(title: "Muscles trained")
-                        MuscleHeatmapView(gender: gender, heatmap: session.muscleIntensity, height: 240)
+                    Text("Muscles trained")
+                        .font(AppFont.sectionTitle)
+                        .kerning(-0.5)
+                        .foregroundStyle(AppColor.textPrimary)
+                        .padding(.top, DS.spacingXL)
+
+                    VStack(spacing: DS.spacing) {
+                        MuscleHeatmapView(gender: gender, heatmap: session.muscleIntensity, height: 230)
+                        HStack(spacing: DS.spacing) {
+                            legend(color: AppColor.accent, label: "Primary")
+                            legend(color: AppColor.heatMid, label: "Secondary")
+                            legend(color: AppColor.muscleIdle, label: "Untrained")
+                        }
                     }
-                    .cardStyle()
+                    .frame(maxWidth: .infinity)
+                    .cardStyle(radius: DS.radiusL)
+                    .padding(.top, DS.spacingM)
                 }
 
-                PrimaryButton(title: "Done", icon: "checkmark") {
+                PrimaryButton(title: "Done") {
                     onDone()
                 }
-                .padding(.top, DS.spacingS)
+                .padding(.top, DS.spacingL)
+
+                if let onViewProgress {
+                    Button("View progress", action: onViewProgress)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(AppColor.textTertiary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, DS.spacingM)
+                }
             }
-            .padding(DS.spacing)
+            .padding(.horizontal, DS.spacingL)
+            .padding(.bottom, DS.spacingXL)
+        }
+        .background(
+            RadialGradient(
+                colors: [AppColor.accent.opacity(0.14), .clear],
+                center: UnitPoint(x: 0.5, y: 0.05),
+                startRadius: 0, endRadius: 320
+            )
+        )
+    }
+
+    private func legend(color: Color, label: String) -> some View {
+        HStack(spacing: 7) {
+            RoundedRectangle(cornerRadius: 2.5)
+                .fill(color)
+                .frame(width: 8, height: 8)
+            Text(label)
+                .font(.system(size: 11.5))
+                .foregroundStyle(AppColor.textSecondary)
         }
     }
 
@@ -377,10 +493,10 @@ struct WorkoutCompleteView: View {
         let volume = controller.logged.reduce(0.0) { $0 + $1.weight * Double($1.reps) }
 
         return LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: DS.spacingM) {
-            MetricCard(value: formatDuration(duration), label: "Duration", icon: "clock.fill")
-            MetricCard(value: "\(controller.logged.count)", label: "Total Sets", icon: "square.stack.3d.up.fill")
-            MetricCard(value: "\(totalReps)", label: "Total Reps", icon: "repeat")
-            MetricCard(value: volume > 0 ? "\(Int(volume)) \(weightUnit)" : "—", label: "Total Volume", icon: "scalemass.fill")
+            MetricCard(value: formatDuration(duration), label: "Duration")
+            MetricCard(value: "\(controller.logged.count)", label: "Sets completed")
+            MetricCard(value: "\(totalReps)", label: "Total reps")
+            MetricCard(value: volume > 0 ? "\(Int(volume)) \(weightUnit)" : "—", label: "Total volume")
         }
     }
 

@@ -16,13 +16,14 @@ struct PrimaryButton: View {
                         .font(.system(size: 15, weight: .semibold))
                 }
                 Text(title)
-                    .font(AppFont.bodyMedium)
+                    .font(.system(size: 17, weight: .semibold))
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 52)
+            .frame(height: DS.buttonHeight)
             .background(isEnabled ? AppColor.accent : AppColor.accent.opacity(0.35))
             .foregroundStyle(.white)
             .clipShape(RoundedRectangle(cornerRadius: DS.radius, style: .continuous))
+            .accentGlow()
         }
         .buttonStyle(PressableStyle())
         .disabled(!isEnabled)
@@ -42,12 +43,12 @@ struct SecondaryButton: View {
                         .font(.system(size: 15, weight: .semibold))
                 }
                 Text(title)
-                    .font(AppFont.bodyMedium)
+                    .font(.system(size: 15, weight: .semibold))
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 52)
-            .background(AppColor.card)
-            .foregroundStyle(AppColor.textPrimary)
+            .frame(height: DS.buttonHeight)
+            .background(AppColor.surface)
+            .foregroundStyle(AppColor.textPrimary.opacity(0.9))
             .clipShape(RoundedRectangle(cornerRadius: DS.radius, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: DS.radius, style: .continuous)
@@ -55,6 +56,27 @@ struct SecondaryButton: View {
             )
         }
         .buttonStyle(PressableStyle())
+    }
+}
+
+/// Small circular glassy icon button (back chevrons, close buttons).
+struct CircleIconButton: View {
+    let icon: String
+    var label: String = "Back"
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(AppColor.textSecondary)
+                .frame(width: 34, height: 34)
+                .background(AppColor.card)
+                .clipShape(Circle())
+                .overlay(Circle().strokeBorder(AppColor.border, lineWidth: 1))
+        }
+        .buttonStyle(PressableStyle())
+        .accessibilityLabel(label)
     }
 }
 
@@ -82,11 +104,11 @@ struct SegmentedSelector<T: Hashable>: View {
                         .frame(height: 34)
                         .background {
                             if option == selection {
-                                RoundedRectangle(cornerRadius: DS.radiusS, style: .continuous)
-                                    .fill(AppColor.card)
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .fill(AppColor.segmentOn)
                                     .overlay(
-                                        RoundedRectangle(cornerRadius: DS.radiusS, style: .continuous)
-                                            .strokeBorder(AppColor.accent.opacity(0.5), lineWidth: 1)
+                                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                            .strokeBorder(AppColor.accent.opacity(0.35), lineWidth: 1)
                                     )
                                     .matchedGeometryEffect(id: "segment", in: segmentNamespace)
                             }
@@ -98,8 +120,12 @@ struct SegmentedSelector<T: Hashable>: View {
             }
         }
         .padding(3)
-        .background(AppColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: DS.radiusS + 3, style: .continuous))
+        .background(AppColor.card)
+        .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                .strokeBorder(AppColor.border, lineWidth: 1)
+        )
     }
 }
 
@@ -119,11 +145,12 @@ struct FilterChip: View {
                 .font(AppFont.meta)
                 .padding(.horizontal, 14)
                 .frame(height: 32)
-                .background(isSelected ? AppColor.accent : AppColor.card)
+                .background(isSelected ? AppColor.accent : AppColor.surface)
                 .foregroundStyle(isSelected ? .white : AppColor.textSecondary)
-                .clipShape(Capsule())
+                .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
                 .overlay(
-                    Capsule().strokeBorder(isSelected ? .clear : AppColor.border, lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .strokeBorder(isSelected ? .clear : AppColor.border, lineWidth: 1)
                 )
         }
         .buttonStyle(PressableStyle())
@@ -160,20 +187,22 @@ struct MetricCard: View {
     var icon: String? = nil
 
     var body: some View {
-        VStack(alignment: .leading, spacing: DS.spacingS) {
+        VStack(alignment: .leading, spacing: 3) {
             if let icon {
                 Image(systemName: icon)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(AppColor.accent)
+                    .padding(.bottom, 4)
             }
             Text(value)
                 .font(AppFont.statValue)
                 .foregroundStyle(AppColor.textPrimary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
+                .monospacedDigit()
             Text(label)
-                .font(AppFont.meta)
-                .foregroundStyle(AppColor.textSecondary)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(AppColor.textTertiary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .cardStyle()
@@ -225,60 +254,55 @@ struct ExerciseMediaView: View {
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: DS.radius, style: .continuous)
-                .fill(AppColor.surface)
+            RoundedRectangle(cornerRadius: DS.radiusL, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [AppColor.surface, AppColor.bodyLimb],
+                        startPoint: .top, endPoint: .bottom
+                    )
+                )
             if let url = mediaService.videoURL(for: exercise.id) {
                 LoopingVideoView(url: url)
-                    .clipShape(RoundedRectangle(cornerRadius: DS.radius, style: .continuous))
-                    .overlay(alignment: .bottomTrailing) {
-                        Text("LOOP")
-                            .font(AppFont.metaSmall)
-                            .foregroundStyle(.white.opacity(0.9))
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(.black.opacity(0.45))
-                            .clipShape(Capsule())
-                            .padding(8)
-                    }
+                    .clipShape(RoundedRectangle(cornerRadius: DS.radiusL, style: .continuous))
+                    .overlay(alignment: .bottom) { loopingBadge }
             } else {
-                placeholder
+                // No footage yet: show the figure with this exercise's muscles lit.
+                ZStack {
+                    Circle()
+                        .fill(
+                            RadialGradient(
+                                colors: [AppColor.accent.opacity(0.14), .clear],
+                                center: .center, startRadius: 0, endRadius: height * 0.55
+                            )
+                        )
+                    ExerciseFigureThumb(exercise: exercise)
+                        .padding(.vertical, DS.spacingM)
+                }
             }
         }
         .frame(height: height)
         .overlay(
-            RoundedRectangle(cornerRadius: DS.radius, style: .continuous)
+            RoundedRectangle(cornerRadius: DS.radiusL, style: .continuous)
                 .strokeBorder(AppColor.border, lineWidth: 1)
         )
         .accessibilityLabel("Exercise demonstration for \(exercise.name)")
     }
 
-    @ViewBuilder
-    private var placeholder: some View {
-        switch exercise.media {
-        case .placeholder(let systemImage):
-            VStack(spacing: DS.spacingS) {
-                Image(systemName: systemImage)
-                    .font(.system(size: 44, weight: .light))
-                    .foregroundStyle(AppColor.accent.opacity(0.7))
-                Text("Demo coming soon")
-                    .font(AppFont.metaSmall)
-                    .foregroundStyle(AppColor.textSecondary)
-            }
-        case .image(let name):
-            Image(name)
-                .resizable()
-                .scaledToFit()
-                .clipShape(RoundedRectangle(cornerRadius: DS.radius, style: .continuous))
-        case .localVideo, .remoteVideo, .animation:
-            VStack(spacing: DS.spacingS) {
-                Image(systemName: "play.circle")
-                    .font(.system(size: 44, weight: .light))
-                    .foregroundStyle(AppColor.accent.opacity(0.7))
-                Text("Video demo")
-                    .font(AppFont.metaSmall)
-                    .foregroundStyle(AppColor.textSecondary)
-            }
+    private var loopingBadge: some View {
+        HStack(spacing: 5) {
+            Circle()
+                .fill(AppColor.accentBright)
+                .frame(width: 5, height: 5)
+            Text("LOOPING")
+                .font(.system(size: 10.5, weight: .semibold))
+                .kerning(0.5)
+                .foregroundStyle(AppColor.textSecondary)
         }
+        .padding(.horizontal, 11)
+        .padding(.vertical, 5)
+        .background(.black.opacity(0.5))
+        .clipShape(Capsule())
+        .padding(.bottom, 12)
     }
 }
 

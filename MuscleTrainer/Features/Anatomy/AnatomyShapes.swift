@@ -13,30 +13,53 @@ struct MuscleRegionShape: Identifiable {
 
 /// Builds and caches anatomy geometry.
 ///
-/// All shapes are authored as point clouds in a fixed 300×640 design space and
-/// smoothed into closed curves. Gender differences are applied as a parametric
-/// warp of x-coordinates around the centerline, so professional SVG artwork can
-/// later replace this without touching any selection or exercise logic.
+/// The figure is a stylized capsule-anatomy: a soft skeleton silhouette
+/// (head, torso, limbs) with each muscle drawn as a rounded shape on top.
+/// Everything is authored in a fixed 200×420 design space, mirrored around
+/// x = 100 for symmetric muscles, with male/female torso and chest variants.
 enum AnatomyShapeStore {
 
-    static let designSize = CGSize(width: 300, height: 640)
-    private static let centerX: CGFloat = 150
+    static let designSize = CGSize(width: 200, height: 420)
 
     // MARK: - Public API
+
+    /// Skeleton layers, drawn first: (path, isLimb). Head/torso use the base
+    /// body color; neck/limbs use the slightly darker limb color.
+    static func skeleton(gender: AnatomyGender) -> (base: Path, limbs: Path) {
+        if let cached = skeletonCache[gender] { return cached }
+
+        var base = Path()
+        base.addEllipse(in: rect(cx: 100, cy: 30, rx: 17, ry: 21))
+        base.addPath(torso(gender: gender))
+
+        var limbs = Path()
+        limbs.addRoundedRect(in: CGRect(x: 90, y: 44, width: 20, height: 16), cornerSize: CGSize(width: 7, height: 7))
+        for p in limbPaths() {
+            limbs.addPath(p)
+            limbs.addPath(mirror(p))
+        }
+
+        let result = (base, limbs)
+        skeletonCache[gender] = result
+        return result
+    }
 
     static func regions(side: BodySide, gender: AnatomyGender) -> [MuscleRegionShape] {
         let key = CacheKey(side: side, gender: gender)
         if let cached = regionCache[key] { return cached }
-        let built = buildRegions(side: side, gender: gender)
+        let specs = side == .front ? frontSpecs(gender: gender) : backSpecs()
+        let built = specs.map { (muscle, path) in
+            var full = path
+            full.addPath(mirror(path))
+            return MuscleRegionShape(
+                id: "\(side.rawValue)-\(muscle.rawValue)",
+                muscle: muscle,
+                side: side,
+                path: full
+            )
+        }
         regionCache[key] = built
         return built
-    }
-
-    static func silhouette(gender: AnatomyGender) -> Path {
-        if let cached = silhouetteCache[gender] { return cached }
-        let path = smoothClosedPath(points: silhouettePoints.map { warp($0, gender: gender) })
-        silhouetteCache[gender] = path
-        return path
     }
 
     /// Scale factor + offset to fit the design space in a rect.
@@ -55,202 +78,133 @@ enum AnatomyShapeStore {
     }
 
     nonisolated(unsafe) private static var regionCache: [CacheKey: [MuscleRegionShape]] = [:]
-    nonisolated(unsafe) private static var silhouetteCache: [AnatomyGender: Path] = [:]
+    nonisolated(unsafe) private static var skeletonCache: [AnatomyGender: (base: Path, limbs: Path)] = [:]
 
-    // MARK: - Gender warp
+    // MARK: - Shape helpers
 
-    /// Adjusts silhouette proportions per gender: narrower shoulders and waist,
-    /// slightly wider hips for the female figure.
-    private static func warp(_ p: CGPoint, gender: AnatomyGender) -> CGPoint {
-        guard gender == .female else { return p }
-        let factor = femaleWidthFactor(atY: p.y)
-        let dx = p.x - centerX
-        return CGPoint(x: centerX + dx * factor, y: p.y)
+    private static func rect(cx: CGFloat, cy: CGFloat, rx: CGFloat, ry: CGFloat) -> CGRect {
+        CGRect(x: cx - rx, y: cy - ry, width: rx * 2, height: ry * 2)
     }
 
-    private static func femaleWidthFactor(atY y: CGFloat) -> CGFloat {
-        // Control points: (y, widthFactor) — linearly interpolated.
-        let controls: [(CGFloat, CGFloat)] = [
-            (0, 0.96), (80, 0.95), (110, 0.90), (170, 0.90),
-            (240, 0.84), (290, 0.92), (330, 1.05), (380, 1.02),
-            (480, 0.97), (640, 0.95)
+    private static func rotation(_ degrees: CGFloat, around p: CGPoint) -> CGAffineTransform {
+        CGAffineTransform(translationX: p.x, y: p.y)
+            .rotated(by: degrees * .pi / 180)
+            .translatedBy(x: -p.x, y: -p.y)
+    }
+
+    private static func ellipse(_ cx: CGFloat, _ cy: CGFloat, _ rx: CGFloat, _ ry: CGFloat, rotate degrees: CGFloat = 0) -> Path {
+        let p = Path(ellipseIn: rect(cx: cx, cy: cy, rx: rx, ry: ry))
+        guard degrees != 0 else { return p }
+        return p.applying(rotation(degrees, around: CGPoint(x: cx, y: cy)))
+    }
+
+    private static func rrect(_ x: CGFloat, _ y: CGFloat, _ w: CGFloat, _ h: CGFloat, _ r: CGFloat,
+                              rotate degrees: CGFloat = 0, pivot: CGPoint? = nil) -> Path {
+        let p = Path(roundedRect: CGRect(x: x, y: y, width: w, height: h), cornerRadius: r)
+        guard degrees != 0 else { return p }
+        let center = pivot ?? CGPoint(x: x + w / 2, y: y + h / 2)
+        return p.applying(rotation(degrees, around: center))
+    }
+
+    private static func mirror(_ p: Path) -> Path {
+        p.applying(CGAffineTransform(translationX: 200, y: 0).scaledBy(x: -1, y: 1))
+    }
+
+    // MARK: - Skeleton geometry
+
+    private static func torso(gender: AnatomyGender) -> Path {
+        var p = Path()
+        if gender == .female {
+            p.move(to: CGPoint(x: 66, y: 78))
+            p.addCurve(to: CGPoint(x: 73, y: 152), control1: CGPoint(x: 61, y: 94), control2: CGPoint(x: 67, y: 126))
+            p.addLine(to: CGPoint(x: 71, y: 192))
+            p.addCurve(to: CGPoint(x: 100, y: 215), control1: CGPoint(x: 73, y: 207), control2: CGPoint(x: 83, y: 215))
+            p.addCurve(to: CGPoint(x: 129, y: 192), control1: CGPoint(x: 117, y: 215), control2: CGPoint(x: 127, y: 207))
+            p.addLine(to: CGPoint(x: 127, y: 152))
+            p.addCurve(to: CGPoint(x: 134, y: 78), control1: CGPoint(x: 133, y: 126), control2: CGPoint(x: 139, y: 94))
+            p.addCurve(to: CGPoint(x: 100, y: 65), control1: CGPoint(x: 126, y: 69), control2: CGPoint(x: 116, y: 65))
+            p.addCurve(to: CGPoint(x: 66, y: 78), control1: CGPoint(x: 84, y: 65), control2: CGPoint(x: 74, y: 69))
+        } else {
+            p.move(to: CGPoint(x: 62, y: 76))
+            p.addCurve(to: CGPoint(x: 67, y: 150), control1: CGPoint(x: 57, y: 92), control2: CGPoint(x: 61, y: 122))
+            p.addLine(to: CGPoint(x: 73, y: 192))
+            p.addCurve(to: CGPoint(x: 100, y: 213), control1: CGPoint(x: 75, y: 206), control2: CGPoint(x: 83, y: 213))
+            p.addCurve(to: CGPoint(x: 127, y: 192), control1: CGPoint(x: 117, y: 213), control2: CGPoint(x: 125, y: 206))
+            p.addLine(to: CGPoint(x: 133, y: 150))
+            p.addCurve(to: CGPoint(x: 138, y: 76), control1: CGPoint(x: 139, y: 122), control2: CGPoint(x: 143, y: 92))
+            p.addCurve(to: CGPoint(x: 100, y: 63), control1: CGPoint(x: 130, y: 67), control2: CGPoint(x: 118, y: 63))
+            p.addCurve(to: CGPoint(x: 62, y: 76), control1: CGPoint(x: 82, y: 63), control2: CGPoint(x: 70, y: 67))
+        }
+        p.closeSubpath()
+        return p
+    }
+
+    /// Left-side limbs; callers mirror for the right side.
+    private static func limbPaths() -> [Path] {
+        [
+            rrect(43, 80, 22, 66, 11, rotate: 5, pivot: CGPoint(x: 54, y: 113)),   // upper arm
+            rrect(36, 142, 19, 64, 9.5, rotate: 6, pivot: CGPoint(x: 45, y: 174)), // forearm
+            ellipse(42, 216, 8.5, 12),                                             // hand
+            rrect(66, 198, 32, 102, 16),                                           // thigh
+            rrect(70, 294, 24, 96, 12),                                            // shin
+            ellipse(80, 398, 11, 9),                                               // foot
         ]
-        var previous = controls[0]
-        for control in controls {
-            if y <= control.0 {
-                let span = control.0 - previous.0
-                guard span > 0 else { return control.1 }
-                let t = (y - previous.0) / span
-                return previous.1 + (control.1 - previous.1) * t
-            }
-            previous = control
-        }
-        return controls.last?.1 ?? 1
     }
 
-    // MARK: - Region construction
+    // MARK: - Muscle geometry (left side; mirrored automatically)
 
-    private static func buildRegions(side: BodySide, gender: AnatomyGender) -> [MuscleRegionShape] {
-        let specs = side == .front ? frontSpecs : backSpecs
-        return specs.map { spec in
-            var path = Path()
-            for blob in spec.blobs {
-                let warped = blob.map { warp($0, gender: gender) }
-                path.addPath(smoothClosedPath(points: warped))
-                if spec.mirrored {
-                    let mirroredPoints = blob.map {
-                        warp(CGPoint(x: 2 * centerX - $0.x, y: $0.y), gender: gender)
-                    }
-                    path.addPath(smoothClosedPath(points: mirroredPoints))
-                }
-            }
-            return MuscleRegionShape(
-                id: "\(side.rawValue)-\(spec.muscle.rawValue)",
-                muscle: spec.muscle,
-                side: side,
-                path: path
-            )
-        }
-    }
+    private static func frontSpecs(gender: AnatomyGender) -> [(Muscle, Path)] {
+        let chest: Path = gender == .female
+            ? rrect(79, 79, 19, 27, 12, rotate: -4, pivot: CGPoint(x: 88, y: 91))
+            : rrect(78, 76, 20.5, 31, 9, rotate: -4, pivot: CGPoint(x: 88, y: 91))
 
-    private struct RegionSpec {
-        let muscle: Muscle
-        let mirrored: Bool
-        let blobs: [[CGPoint]]
+        var abs = Path()
+        abs.addPath(rrect(89, 113, 9.5, 11, 3))
+        abs.addPath(rrect(89, 127, 9.5, 11, 3))
+        abs.addPath(rrect(89, 141, 9.5, 11, 3))
+        abs.addPath(rrect(89, 155, 9.5, 10, 3))
 
-        init(_ muscle: Muscle, mirrored: Bool = true, _ blobs: [[CGPoint]]) {
-            self.muscle = muscle
-            self.mirrored = mirrored
-            self.blobs = blobs
-        }
-    }
-
-    private static func pts(_ values: [(CGFloat, CGFloat)]) -> [CGPoint] {
-        values.map { CGPoint(x: $0.0, y: $0.1) }
-    }
-
-    // MARK: - Silhouette (right half, mirrored automatically)
-
-    private static let silhouettePoints: [CGPoint] = {
-        let right: [(CGFloat, CGFloat)] = [
-            (150, 10), (168, 16), (177, 36), (172, 56), (163, 68),
-            (161, 78), (176, 86), (200, 93), (214, 102),
-            (224, 116), (229, 138), (233, 162), (237, 186),
-            (241, 212), (246, 240), (250, 264), (252, 284),
-            (254, 298), (247, 308), (238, 300), (233, 282),
-            (228, 258), (222, 230), (215, 202), (208, 176),
-            (204, 156), (201, 170), (194, 200), (188, 232),
-            (186, 258), (191, 284), (199, 308), (201, 328),
-            (197, 356), (190, 396), (185, 436), (183, 466),
-            (187, 500), (183, 540), (175, 578), (173, 592),
-            (186, 602), (184, 616), (160, 617), (161, 590),
-            (165, 552), (161, 510), (158, 474), (160, 434),
-            (157, 392), (152, 358)
+        return [
+            (.sideDelts, ellipse(63, 86, 12.5, 14, rotate: -8)),
+            (.frontDelts, ellipse(77, 82, 10, 11.5)),
+            (.chest, chest),
+            (.biceps, ellipse(57, 118, 9.5, 19, rotate: 6)),
+            (.forearms, ellipse(47, 170, 8.5, 24, rotate: 6)),
+            (.abs, abs),
+            (.obliques, ellipse(81, 138, 6.5, 21, rotate: -5)),
+            (.quads, ellipse(82, 244, 14.5, 42)),
+            (.adductors, ellipse(95, 238, 6, 30)),
+            (.tibialis, ellipse(85, 336, 6, 31)),
+            (.calves, ellipse(73, 332, 6, 25)),
         ]
-        var all = right.map { CGPoint(x: $0.0, y: $0.1) }
-        let mirrored = right.reversed().dropLast().map { CGPoint(x: 300 - $0.0, y: $0.1) }
-        all.append(contentsOf: mirrored)
-        return all
-    }()
+    }
 
-    // MARK: - Front muscles
+    private static func backSpecs() -> [(Muscle, Path)] {
+        var traps = Path()
+        traps.move(to: CGPoint(x: 99, y: 58))
+        traps.addLine(to: CGPoint(x: 99, y: 104))
+        traps.addLine(to: CGPoint(x: 72, y: 86))
+        traps.addCurve(to: CGPoint(x: 99, y: 58), control1: CGPoint(x: 75, y: 70), control2: CGPoint(x: 86, y: 60))
+        traps.closeSubpath()
 
-    private static let frontSpecs: [RegionSpec] = [
-        RegionSpec(.sideDelts, [pts([
-            (212, 100), (226, 112), (230, 134), (222, 148), (212, 140), (214, 118)
-        ])]),
-        RegionSpec(.frontDelts, [pts([
-            (194, 96), (212, 104), (218, 122), (211, 136), (200, 142), (194, 124)
-        ])]),
-        RegionSpec(.chest, [pts([
-            (153, 106), (192, 102), (203, 118), (202, 144), (187, 161), (160, 165), (153, 156)
-        ])]),
-        RegionSpec(.biceps, [pts([
-            (204, 150), (218, 152), (227, 178), (224, 200), (211, 198), (203, 172)
-        ])]),
-        RegionSpec(.forearms, [pts([
-            (221, 206), (235, 210), (243, 240), (247, 266), (238, 270), (226, 244), (217, 222)
-        ])]),
-        RegionSpec(.abs, mirrored: false, [pts([
-            (132, 172), (168, 172), (172, 222), (168, 272), (150, 284), (132, 272), (128, 222)
-        ])]),
-        RegionSpec(.obliques, [pts([
-            (174, 182), (186, 198), (190, 232), (186, 258), (176, 270), (172, 232), (173, 200)
-        ])]),
-        RegionSpec(.hipFlexors, [pts([
-            (156, 290), (176, 283), (186, 297), (172, 312), (158, 306)
-        ])]),
-        RegionSpec(.adductors, [pts([
-            (154, 330), (168, 322), (174, 354), (168, 392), (158, 400), (151, 360)
-        ])]),
-        RegionSpec(.quads, [pts([
-            (170, 330), (192, 323), (198, 362), (196, 412), (188, 452), (176, 458), (166, 420), (164, 372)
-        ])]),
-        RegionSpec(.tibialis, [pts([
-            (172, 480), (182, 478), (185, 520), (178, 566), (170, 560), (168, 516)
-        ])]),
-        RegionSpec(.calves, [pts([
-            (160, 478), (168, 483), (166, 530), (158, 540), (154, 506)
-        ])]),
-    ]
+        var lats = Path()
+        lats.move(to: CGPoint(x: 79, y: 100))
+        lats.addCurve(to: CGPoint(x: 85, y: 160), control1: CGPoint(x: 68, y: 116), control2: CGPoint(x: 71, y: 144))
+        lats.addLine(to: CGPoint(x: 98, y: 152))
+        lats.addLine(to: CGPoint(x: 98, y: 104))
+        lats.closeSubpath()
 
-    // MARK: - Back muscles
-
-    private static let backSpecs: [RegionSpec] = [
-        RegionSpec(.traps, [pts([
-            (150, 70), (174, 82), (200, 95), (186, 118), (162, 140), (150, 148)
-        ])]),
-        RegionSpec(.rearDelts, [pts([
-            (200, 97), (220, 107), (228, 130), (218, 144), (204, 138), (198, 118)
-        ])]),
-        RegionSpec(.upperBack, [pts([
-            (152, 150), (178, 132), (194, 146), (188, 168), (162, 176), (152, 166)
-        ])]),
-        RegionSpec(.lats, [pts([
-            (156, 178), (190, 160), (201, 178), (195, 214), (178, 248), (158, 262), (153, 216)
-        ])]),
-        RegionSpec(.lowerBack, mirrored: false, [pts([
-            (134, 250), (166, 250), (172, 280), (164, 306), (136, 306), (128, 280)
-        ])]),
-        RegionSpec(.triceps, [pts([
-            (204, 150), (220, 152), (229, 180), (226, 204), (212, 202), (203, 174)
-        ])]),
-        RegionSpec(.forearms, [pts([
-            (221, 208), (235, 212), (243, 242), (247, 266), (238, 270), (226, 246), (217, 224)
-        ])]),
-        RegionSpec(.glutes, [pts([
-            (152, 302), (186, 297), (198, 317), (194, 348), (174, 361), (154, 353)
-        ])]),
-        RegionSpec(.hamstrings, [pts([
-            (158, 368), (190, 362), (194, 402), (188, 448), (174, 460), (162, 432), (157, 396)
-        ])]),
-        RegionSpec(.calves, [pts([
-            (162, 470), (186, 468), (190, 506), (182, 552), (170, 556), (159, 516)
-        ])]),
-    ]
-
-    // MARK: - Smoothing
-
-    /// Builds a smooth closed path through the given points using Catmull-Rom
-    /// splines converted to cubic Béziers.
-    private static func smoothClosedPath(points: [CGPoint]) -> Path {
-        var path = Path()
-        guard points.count > 2 else {
-            if let first = points.first { path.addEllipse(in: CGRect(x: first.x - 2, y: first.y - 2, width: 4, height: 4)) }
-            return path
-        }
-        let n = points.count
-        path.move(to: points[0])
-        for i in 0..<n {
-            let p0 = points[(i - 1 + n) % n]
-            let p1 = points[i]
-            let p2 = points[(i + 1) % n]
-            let p3 = points[(i + 2) % n]
-            let c1 = CGPoint(x: p1.x + (p2.x - p0.x) / 6, y: p1.y + (p2.y - p0.y) / 6)
-            let c2 = CGPoint(x: p2.x - (p3.x - p1.x) / 6, y: p2.y - (p3.y - p1.y) / 6)
-            path.addCurve(to: p2, control1: c1, control2: c2)
-        }
-        path.closeSubpath()
-        return path
+        return [
+            (.traps, traps),
+            (.rearDelts, ellipse(64, 86, 12.5, 14, rotate: -8)),
+            (.upperBack, rrect(80, 96, 18, 26, 6)),
+            (.lats, lats),
+            (.lowerBack, rrect(84, 160, 14, 28, 5)),
+            (.triceps, ellipse(55, 118, 9.5, 19, rotate: 6)),
+            (.forearms, ellipse(47, 170, 8.5, 24, rotate: 6)),
+            (.glutes, ellipse(85, 206, 16, 16)),
+            (.hamstrings, ellipse(83, 258, 13.5, 38)),
+            (.calves, ellipse(82, 332, 8.5, 30)),
+        ]
     }
 }

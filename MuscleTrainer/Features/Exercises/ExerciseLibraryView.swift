@@ -132,31 +132,23 @@ struct ExerciseCard: View {
     }
 
     var body: some View {
-        HStack(spacing: DS.spacingM) {
+        VStack(alignment: .leading, spacing: 0) {
+            // Media header: the user's looping video when uploaded, else the figure.
             ZStack {
-                RoundedRectangle(cornerRadius: DS.radiusS, style: .continuous)
-                    .fill(AppColor.surface)
-                    .frame(width: 56, height: 56)
-                Image(systemName: hasVideo ? "play.fill" : mediaIcon)
-                    .font(.system(size: 22, weight: hasVideo ? .medium : .light))
-                    .foregroundStyle(AppColor.accent.opacity(0.8))
+                LinearGradient(
+                    colors: [AppColor.surface, AppColor.bodyLimb],
+                    startPoint: .top, endPoint: .bottom
+                )
+                if let url = mediaService.videoURL(for: exercise.id) {
+                    LoopingVideoView(url: url)
+                } else {
+                    ExerciseFigureThumb(exercise: exercise, gender: profile?.anatomyGender ?? .male)
+                        .padding(.vertical, 8)
+                }
             }
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(exercise.name)
-                    .font(AppFont.cardTitle)
-                    .foregroundStyle(AppColor.textPrimary)
-                    .lineLimit(1)
-                Text(subtitle)
-                    .font(AppFont.meta)
-                    .foregroundStyle(AppColor.textSecondary)
-                    .lineLimit(1)
-                DifficultyBadge(difficulty: exercise.difficulty)
-            }
-
-            Spacer()
-
-            VStack(spacing: DS.spacingM) {
+            .frame(height: 132)
+            .clipped()
+            .overlay(alignment: .topTrailing) {
                 Button {
                     guard let profile else { return }
                     Haptics.selection()
@@ -164,39 +156,80 @@ struct ExerciseCard: View {
                     try? context.save()
                 } label: {
                     Image(systemName: isFavorite ? "heart.fill" : "heart")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundStyle(isFavorite ? AppColor.accent : AppColor.textSecondary)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(isFavorite ? AppColor.accentBright : AppColor.textSecondary)
+                        .frame(width: 32, height: 32)
+                        .background(AppColor.background.opacity(0.6))
+                        .clipShape(Circle())
                 }
                 .buttonStyle(.plain)
+                .padding(12)
                 .accessibilityLabel(isFavorite ? "Remove \(exercise.name) from favorites" : "Add \(exercise.name) to favorites")
-
-                if showsAddButton {
-                    Button {
-                        appState.exerciseToAdd = exercise
-                    } label: {
-                        Image(systemName: "plus.circle")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundStyle(AppColor.textSecondary)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Add \(exercise.name) to a workout")
-                }
             }
+
+            VStack(alignment: .leading, spacing: 0) {
+                HStack {
+                    Text(exercise.name)
+                        .font(.system(size: 17, weight: .semibold))
+                        .kerning(-0.4)
+                        .foregroundStyle(AppColor.textPrimary)
+                        .lineLimit(1)
+                    Spacer()
+                    if showsAddButton {
+                        Button {
+                            appState.exerciseToAdd = exercise
+                        } label: {
+                            Image(systemName: "plus")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundStyle(AppColor.accentBright)
+                                .frame(width: 28, height: 28)
+                                .background(AppColor.accent.opacity(0.14))
+                                .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Add \(exercise.name) to a workout")
+                    }
+                }
+                HStack(spacing: 7) {
+                    infoChip(exercise.equipment.first?.displayName ?? "—")
+                    infoChip(exercise.difficulty.displayName)
+                }
+                .padding(.top, 8)
+                Text(targetLine)
+                    .font(.system(size: 12.5))
+                    .foregroundStyle(AppColor.textTertiary)
+                    .lineLimit(1)
+                    .padding(.top, 9)
+            }
+            .padding(.horizontal, 15)
+            .padding(.vertical, 13)
         }
-        .cardStyle(padding: DS.spacingM)
+        .background(AppColor.card)
+        .clipShape(RoundedRectangle(cornerRadius: DS.radiusL - 2, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: DS.radiusL - 2, style: .continuous)
+                .strokeBorder(AppColor.border, lineWidth: 1)
+        )
+    }
+
+    private func infoChip(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundStyle(AppColor.textSecondary)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(AppColor.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
     }
 
     private var isFavorite: Bool {
         profile?.isFavorite(exercise.id) ?? false
     }
 
-    private var subtitle: String {
-        let equipment = exercise.equipment.first?.displayName ?? "—"
-        return "\(equipment) • \(exercise.primaryMuscle.displayName)"
-    }
-
-    private var mediaIcon: String {
-        if case .placeholder(let icon) = exercise.media { return icon }
-        return "figure.strengthtraining.traditional"
+    private var targetLine: String {
+        (exercise.primaryMuscles + exercise.secondaryMuscles)
+            .prefix(3)
+            .map(\.displayName)
+            .joined(separator: " • ")
     }
 }

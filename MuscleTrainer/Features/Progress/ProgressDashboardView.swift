@@ -18,14 +18,40 @@ struct ProgressDashboardView: View {
                     )
                     .padding(.top, DS.spacingXXL)
                 } else {
-                    VStack(alignment: .leading, spacing: DS.spacingL) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        weekCard
                         statsGrid
-                        volumeSection
-                        heatmapSection
-                        muscleRanking
-                        historySection
+                            .padding(.top, DS.spacingM)
+
+                        Text("Muscle activity")
+                            .font(AppFont.sectionTitle)
+                            .kerning(-0.5)
+                            .foregroundStyle(AppColor.textPrimary)
+                            .padding(.top, DS.spacingXL)
+                        heatmapCard
+                            .padding(.top, DS.spacingM)
+
+                        Text("Training balance")
+                            .font(AppFont.sectionTitle)
+                            .kerning(-0.5)
+                            .foregroundStyle(AppColor.textPrimary)
+                            .padding(.top, DS.spacingXL)
+                        balanceCard
+                            .padding(.top, DS.spacingM)
+
+                        Text("History")
+                            .font(AppFont.sectionTitle)
+                            .kerning(-0.5)
+                            .foregroundStyle(AppColor.textPrimary)
+                            .padding(.top, DS.spacingXL)
+                        VStack(spacing: DS.spacingS) {
+                            ForEach(sessions.prefix(10)) { session in
+                                SessionRow(session: session, weightUnit: weightUnit)
+                            }
+                        }
+                        .padding(.top, DS.spacingM)
                     }
-                    .padding(.horizontal, DS.spacing)
+                    .padding(.horizontal, DS.spacingL)
                     .padding(.bottom, DS.spacingXL)
                 }
             }
@@ -41,12 +67,18 @@ struct ProgressDashboardView: View {
         return sessions.filter { $0.startedAt >= weekAgo }.count
     }
 
+    private var previousWeekCount: Int {
+        let calendar = Calendar.current
+        guard let weekAgo = calendar.date(byAdding: .day, value: -7, to: .now),
+              let twoWeeksAgo = calendar.date(byAdding: .day, value: -14, to: .now) else { return 0 }
+        return sessions.filter { $0.startedAt >= twoWeeksAgo && $0.startedAt < weekAgo }.count
+    }
+
     private var streakDays: Int {
         let calendar = Calendar.current
         let trainedDays = Set(sessions.map { calendar.startOfDay(for: $0.startedAt) })
         var streak = 0
         var day = calendar.startOfDay(for: .now)
-        // Today counts if trained; otherwise start from yesterday.
         if !trainedDays.contains(day) {
             day = calendar.date(byAdding: .day, value: -1, to: day) ?? day
         }
@@ -72,116 +104,169 @@ struct ProgressDashboardView: View {
         return counts.mapValues { $0 / maxValue }
     }
 
-    private var muscleTotals: [(Muscle, Double)] {
-        aggregatedIntensity.sorted { $0.value > $1.value }.map { ($0.key, $0.value) }
+    /// Sets per broad region over recent sessions, normalized to the busiest region.
+    private var regionBalance: [(BodyRegion, Double)] {
+        var counts: [BodyRegion: Double] = [:]
+        for session in sessions.prefix(30) {
+            for set in session.completedSets {
+                guard let exercise = ExerciseDatabase.exercise(id: set.exerciseID) else { continue }
+                counts[exercise.primaryMuscle.region, default: 0] += 1
+            }
+        }
+        guard let maxValue = counts.values.max(), maxValue > 0 else { return [] }
+        return counts
+            .sorted { $0.value > $1.value }
+            .map { ($0.key, $0.value / maxValue) }
+    }
+
+    /// Sessions per day for the last 7 days, oldest first.
+    private var weekBars: [(label: String, count: Int)] {
+        let calendar = Calendar.current
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEEEE"
+        return (0..<7).reversed().map { offset in
+            let day = calendar.date(byAdding: .day, value: -offset, to: calendar.startOfDay(for: .now)) ?? .now
+            let count = sessions.filter { calendar.isDate($0.startedAt, inSameDayAs: day) }.count
+            return (formatter.string(from: day), count)
+        }
     }
 
     // MARK: - Sections
 
+    private var weekCard: some View {
+        let delta = weeklyCount - previousWeekCount
+        let bars = weekBars
+        let maxCount = max(bars.map(\.count).max() ?? 1, 1)
+
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .bottom) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("\(weeklyCount) workout\(weeklyCount == 1 ? "" : "s")")
+                        .font(.system(size: 32, weight: .bold))
+                        .kerning(-1.2)
+                        .foregroundStyle(AppColor.textPrimary)
+                    Text("This week")
+                        .font(.system(size: 13.5))
+                        .foregroundStyle(AppColor.textSecondary)
+                }
+                Spacer()
+                if delta != 0 {
+                    Text(delta > 0 ? "+\(delta) vs last" : "\(delta) vs last")
+                        .font(.system(size: 12.5, weight: .semibold))
+                        .foregroundStyle(delta > 0 ? AppColor.accentBright : AppColor.textSecondary)
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 4)
+                        .background(delta > 0 ? AppColor.accent.opacity(0.12) : AppColor.surface)
+                        .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+                }
+            }
+
+            HStack(alignment: .bottom, spacing: DS.spacingS) {
+                ForEach(Array(bars.enumerated()), id: \.offset) { _, bar in
+                    VStack(spacing: 8) {
+                        Spacer(minLength: 0)
+                        RoundedRectangle(cornerRadius: 5, style: .continuous)
+                            .fill(bar.count > 0 ? AppColor.accent : AppColor.surface)
+                            .frame(height: bar.count > 0 ? max(14, 64 * Double(bar.count) / Double(maxCount)) : 8)
+                        Text(bar.label)
+                            .font(.system(size: 10.5, weight: .semibold))
+                            .foregroundStyle(AppColor.textFaint)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("\(bar.label): \(bar.count) workouts")
+                }
+            }
+            .frame(height: 96)
+            .padding(.top, DS.spacingL)
+        }
+        .padding(DS.spacingL)
+        .background(
+            LinearGradient(
+                colors: [AppColor.segmentOn.opacity(0.6), AppColor.card],
+                startPoint: .topLeading, endPoint: .bottomTrailing
+            )
+        )
+        .clipShape(RoundedRectangle(cornerRadius: DS.radiusL, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: DS.radiusL, style: .continuous)
+                .strokeBorder(AppColor.border, lineWidth: 1)
+        )
+    }
+
     private var statsGrid: some View {
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: DS.spacingM) {
-            MetricCard(value: "\(weeklyCount)", label: "Workouts this week", icon: "calendar")
-            MetricCard(value: streakDays == 1 ? "1 day" : "\(streakDays) days", label: "Training streak", icon: "flame.fill")
-            MetricCard(value: "\(sessions.count)", label: "Total workouts", icon: "checkmark.seal.fill")
-            MetricCard(value: totalMinutes < 60 ? "\(totalMinutes) min" : "\(totalMinutes / 60) h", label: "Total time", icon: "clock.fill")
+            MetricCard(value: streakDays == 1 ? "1 day" : "\(streakDays) days", label: "Training streak")
+            MetricCard(value: "\(sessions.count)", label: "Total workouts")
+            MetricCard(value: totalMinutes < 60 ? "\(totalMinutes) min" : "\(totalMinutes / 60) h", label: "Total time")
+            MetricCard(
+                value: "\(Int(sessions.prefix(30).reduce(0.0) { $0 + $1.totalVolume })) \(weightUnit)",
+                label: "Recent volume"
+            )
         }
     }
 
-    private var volumeSection: some View {
-        VStack(alignment: .leading, spacing: DS.spacingM) {
-            SectionHeader(title: "Volume trend", subtitle: "Last 8 sessions")
-            VolumeBars(sessions: Array(sessions.prefix(8).reversed()), weightUnit: weightUnit)
-                .cardStyle()
-        }
-    }
-
-    private var heatmapSection: some View {
-        VStack(alignment: .leading, spacing: DS.spacingM) {
-            SectionHeader(title: "Muscle activity", subtitle: "Recent training focus")
+    private var heatmapCard: some View {
+        VStack(spacing: DS.spacing) {
             MuscleHeatmapView(
                 gender: profiles.first?.anatomyGender ?? .male,
                 heatmap: aggregatedIntensity,
-                height: 260
+                height: 250
             )
-            .cardStyle()
+            HStack(spacing: 9) {
+                Text("Less")
+                    .font(.system(size: 11))
+                    .foregroundStyle(AppColor.textTertiary)
+                HStack(spacing: 4) {
+                    scaleStep(AppColor.muscleIdle)
+                    scaleStep(AppColor.heatLow)
+                    scaleStep(AppColor.heatMid)
+                    scaleStep(AppColor.accent)
+                }
+                Text("More")
+                    .font(.system(size: 11))
+                    .foregroundStyle(AppColor.textTertiary)
+            }
         }
+        .frame(maxWidth: .infinity)
+        .cardStyle(radius: DS.radiusL)
     }
 
-    private var muscleRanking: some View {
-        VStack(alignment: .leading, spacing: DS.spacingM) {
-            SectionHeader(title: "Most trained")
-            VStack(spacing: DS.spacingS) {
-                ForEach(muscleTotals.prefix(5), id: \.0) { muscle, value in
-                    rankRow(muscle: muscle, value: value)
-                }
-            }
-            .cardStyle()
+    private func scaleStep(_ color: Color) -> some View {
+        RoundedRectangle(cornerRadius: 2, style: .continuous)
+            .fill(color)
+            .frame(width: 22, height: 8)
+    }
 
-            if muscleTotals.count > 5 {
-                SectionHeader(title: "Least trained")
-                VStack(spacing: DS.spacingS) {
-                    ForEach(muscleTotals.suffix(3).reversed(), id: \.0) { muscle, value in
-                        rankRow(muscle: muscle, value: value)
+    private var balanceCard: some View {
+        let balance = regionBalance
+        return VStack(alignment: .leading, spacing: DS.spacing) {
+            ForEach(balance, id: \.0) { region, value in
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(region.displayName)
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(AppColor.textPrimary)
+                        Spacer()
+                        Text("\(Int(value * 100))%")
+                            .font(.system(size: 12))
+                            .foregroundStyle(AppColor.textTertiary)
+                            .monospacedDigit()
                     }
+                    GeometryReader { proxy in
+                        ZStack(alignment: .leading) {
+                            Capsule().fill(AppColor.control)
+                            Capsule()
+                                .fill(AppColor.accent.opacity(0.35 + 0.65 * value))
+                                .frame(width: max(8, proxy.size.width * value))
+                        }
+                    }
+                    .frame(height: 5)
                 }
-                .cardStyle()
-            }
-        }
-    }
-
-    private func rankRow(muscle: Muscle, value: Double) -> some View {
-        HStack(spacing: DS.spacingM) {
-            Text(muscle.displayName)
-                .font(AppFont.body)
-                .foregroundStyle(AppColor.textPrimary)
-                .frame(width: 110, alignment: .leading)
-            GeometryReader { proxy in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(AppColor.surface)
-                    Capsule()
-                        .fill(AppColor.accent.opacity(0.35 + 0.65 * value))
-                        .frame(width: max(8, proxy.size.width * value))
-                }
-            }
-            .frame(height: 8)
-        }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(muscle.displayName): \(Int(value * 100)) percent of your most trained muscle")
-    }
-
-    private var historySection: some View {
-        VStack(alignment: .leading, spacing: DS.spacingM) {
-            SectionHeader(title: "History", subtitle: "\(sessions.count) sessions")
-            ForEach(sessions.prefix(10)) { session in
-                SessionRow(session: session, weightUnit: weightUnit)
-            }
-        }
-    }
-}
-
-// MARK: - Simple volume bar chart
-
-private struct VolumeBars: View {
-    let sessions: [WorkoutSession]
-    let weightUnit: String
-
-    var body: some View {
-        let maxVolume = max(sessions.map(\.totalVolume).max() ?? 1, 1)
-        HStack(alignment: .bottom, spacing: DS.spacingS) {
-            ForEach(sessions) { session in
-                VStack(spacing: 4) {
-                    RoundedRectangle(cornerRadius: 4, style: .continuous)
-                        .fill(AppColor.accent.opacity(0.85))
-                        .frame(height: max(6, 110 * session.totalVolume / maxVolume))
-                    Text(session.startedAt.formatted(.dateTime.day()))
-                        .font(AppFont.metaSmall)
-                        .foregroundStyle(AppColor.textSecondary)
-                }
-                .frame(maxWidth: .infinity)
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel("\(session.startedAt.formatted(date: .abbreviated, time: .omitted)): \(Int(session.totalVolume)) \(weightUnit)")
+                .accessibilityLabel("\(region.displayName): \(Int(value * 100)) percent of your most trained region")
             }
         }
-        .frame(height: 140, alignment: .bottom)
+        .cardStyle(padding: DS.spacingL, radius: DS.radiusL)
     }
 }

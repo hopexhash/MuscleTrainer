@@ -14,8 +14,12 @@ enum DS {
     // Corner radius
     static let radiusS: CGFloat = 10
     static let radius: CGFloat = 16
+    static let radiusCard: CGFloat = 18
     static let radiusL: CGFloat = 22
     static let radiusXL: CGFloat = 30
+
+    // Controls
+    static let buttonHeight: CGFloat = 56
 
     // Animation
     static let quick: Animation = .easeOut(duration: 0.18)
@@ -25,39 +29,61 @@ enum DS {
 }
 
 /// Typography scale built on SF with Dynamic Type support.
+/// Big titles run tight (negative tracking) per the design language.
 enum AppFont {
-    static let hero = Font.system(size: 34, weight: .bold, design: .rounded)
+    static let hero = Font.system(size: 33, weight: .bold)
     static let pageTitle = Font.system(size: 30, weight: .bold)
-    static let sectionTitle = Font.system(size: 21, weight: .semibold)
+    static let sectionTitle = Font.system(size: 20, weight: .semibold)
     static let cardTitle = Font.system(size: 17, weight: .semibold)
     static let body = Font.system(size: 16, weight: .regular)
     static let bodyMedium = Font.system(size: 16, weight: .medium)
     static let meta = Font.system(size: 13, weight: .medium)
     static let metaSmall = Font.system(size: 11, weight: .semibold)
-    static let timer = Font.system(size: 64, weight: .bold, design: .rounded)
-    static let statValue = Font.system(size: 26, weight: .bold, design: .rounded)
+    static let micro = Font.system(size: 11.5, weight: .bold)
+    static let timer = Font.system(size: 56, weight: .bold)
+    static let statValue = Font.system(size: 24, weight: .bold)
+}
+
+/// Uppercase, letter-spaced micro label (e.g. "AI GENERATED", "WEIGHT").
+struct MicroLabel: View {
+    let text: String
+    var color: Color = AppColor.textTertiary
+
+    var body: some View {
+        Text(text)
+            .font(AppFont.micro)
+            .kerning(1.0)
+            .textCase(.uppercase)
+            .foregroundStyle(color)
+    }
 }
 
 // MARK: - Common view modifiers
 
 struct CardBackground: ViewModifier {
     var padding: CGFloat = DS.spacing
+    var radius: CGFloat = DS.radiusCard
 
     func body(content: Content) -> some View {
         content
             .padding(padding)
             .background(AppColor.card)
-            .clipShape(RoundedRectangle(cornerRadius: DS.radius, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: DS.radius, style: .continuous)
+                RoundedRectangle(cornerRadius: radius, style: .continuous)
                     .strokeBorder(AppColor.border, lineWidth: 1)
             )
     }
 }
 
 extension View {
-    func cardStyle(padding: CGFloat = DS.spacing) -> some View {
-        modifier(CardBackground(padding: padding))
+    func cardStyle(padding: CGFloat = DS.spacing, radius: CGFloat = DS.radiusCard) -> some View {
+        modifier(CardBackground(padding: padding, radius: radius))
+    }
+
+    /// The signature blue glow under primary CTAs.
+    func accentGlow() -> some View {
+        shadow(color: AppColor.accent.opacity(0.28), radius: 14, y: 8)
     }
 }
 

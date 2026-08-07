@@ -3,7 +3,6 @@ import SwiftData
 
 struct AnatomyView: View {
     @Query private var profiles: [UserProfile]
-    @Environment(\.modelContext) private var context
 
     @State private var side: BodySide = .front
     @State private var gender: AnatomyGender = .male
@@ -15,22 +14,15 @@ struct AnatomyView: View {
             ZStack(alignment: .bottom) {
                 AppColor.background.ignoresSafeArea()
 
-                VStack(spacing: DS.spacing) {
+                VStack(alignment: .leading, spacing: 0) {
                     header
                     controls
-                    AnatomyFigureView(
-                        side: side,
-                        gender: gender,
-                        selectedMuscles: selectedMuscle.map { [$0] } ?? [],
-                        onTap: handleTap
-                    )
-                    .padding(.horizontal, DS.spacingL)
-                    .padding(.bottom, selectedMuscle == nil ? DS.spacing : 132)
+                    figureArea
                 }
                 .padding(.top, DS.spacingS)
 
                 if let muscle = selectedMuscle {
-                    MusclePanel(muscle: muscle) {
+                    MuscleSheet(muscle: muscle, gender: gender) {
                         withAnimation(DS.panelSpring) { selectedMuscle = nil }
                     }
                     .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -50,20 +42,25 @@ struct AnatomyView: View {
         }
     }
 
-    private func handleTap(_ muscle: Muscle) {
-        withAnimation(DS.panelSpring) {
-            selectedMuscle = selectedMuscle == muscle ? nil : muscle
-        }
-    }
-
     private var header: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text("Train")
-                .font(AppFont.hero)
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 0) {
+                Text("Muscle")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(AppColor.textSecondary)
+                Text("Trainer")
+                    .font(.system(size: 13, weight: .regular))
+                    .foregroundStyle(AppColor.textTertiary)
+            }
+            Text("What are you training?")
+                .font(AppFont.pageTitle)
+                .kerning(-0.5)
                 .foregroundStyle(AppColor.textPrimary)
-            Text("Select a muscle to begin")
-                .font(AppFont.body)
-                .foregroundStyle(AppColor.textSecondary)
+                .padding(.top, 10)
+            Text("Tap a muscle to see exercises.")
+                .font(.system(size: 14))
+                .foregroundStyle(AppColor.textTertiary)
+                .padding(.top, 5)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, DS.spacingL)
@@ -94,46 +91,118 @@ struct AnatomyView: View {
             )
         }
         .padding(.horizontal, DS.spacingL)
+        .padding(.top, DS.spacing)
+    }
+
+    private var figureArea: some View {
+        ZStack(alignment: .top) {
+            // Soft blue aura behind the figure.
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [AppColor.accent.opacity(0.07), .clear],
+                        center: .center, startRadius: 0, endRadius: 170
+                    )
+                )
+                .frame(width: 340, height: 340)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            AnatomyFigureView(
+                side: side,
+                gender: gender,
+                selectedMuscles: selectedMuscle.map { [$0] } ?? [],
+                onTap: handleTap
+            )
+            .padding(.horizontal, DS.spacingXL)
+            .padding(.vertical, DS.spacingS)
+
+            // Floating muscle name pill.
+            if let muscle = selectedMuscle {
+                VStack(spacing: 2) {
+                    Text(muscle.displayName.uppercased())
+                        .font(AppFont.micro)
+                        .kerning(1.2)
+                        .foregroundStyle(AppColor.accentBright)
+                    Text(muscle.anatomicalName)
+                        .font(.system(size: 12))
+                        .foregroundStyle(AppColor.textSecondary)
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(AppColor.card.opacity(0.9))
+                .background(.ultraThinMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .strokeBorder(AppColor.border, lineWidth: 1)
+                )
+                .padding(.top, DS.spacingM)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .padding(.bottom, selectedMuscle == nil ? 0 : 150)
+    }
+
+    private func handleTap(_ muscle: Muscle) {
+        withAnimation(DS.panelSpring) {
+            selectedMuscle = selectedMuscle == muscle ? nil : muscle
+        }
     }
 }
 
-// MARK: - Floating muscle panel
+// MARK: - Floating bottom sheet
 
-private struct MusclePanel: View {
+private struct MuscleSheet: View {
     let muscle: Muscle
+    let gender: AnatomyGender
     let onDismiss: () -> Void
-
-    @Environment(AppState.self) private var appState
 
     private var exerciseCount: Int {
         ExerciseDatabase.exercises(for: muscle).count
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: DS.spacingM) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 2) {
+        VStack(spacing: DS.spacing) {
+            HStack(spacing: 14) {
+                // Mini figure with the muscle lit.
+                AnatomyFigureView(
+                    side: muscle.isBackFacing ? .back : .front,
+                    gender: gender,
+                    selectedMuscles: [muscle],
+                    isInteractive: false
+                )
+                .frame(width: 52, height: 64)
+                .padding(4)
+                .background(AppColor.bodyLimb.opacity(0.6))
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(AppColor.border, lineWidth: 1)
+                )
+                .accessibilityHidden(true)
+
+                VStack(alignment: .leading, spacing: 1) {
                     Text(muscle.displayName)
-                        .font(AppFont.sectionTitle)
+                        .font(.system(size: 22, weight: .bold))
+                        .kerning(-0.4)
                         .foregroundStyle(AppColor.textPrimary)
                     Text(muscle.anatomicalName)
-                        .font(AppFont.meta)
+                        .font(.system(size: 13))
                         .foregroundStyle(AppColor.textSecondary)
+                    Text("\(exerciseCount) exercises")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(AppColor.accentBright)
+                        .padding(.top, 4)
                 }
+
                 Spacer()
-                Text("\(exerciseCount) exercises")
-                    .font(AppFont.metaSmall)
-                    .foregroundStyle(AppColor.accent)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .background(AppColor.accent.opacity(0.12))
-                    .clipShape(Capsule())
+
                 Button(action: onDismiss) {
                     Image(systemName: "xmark")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(AppColor.textSecondary)
-                        .frame(width: 30, height: 30)
-                        .background(AppColor.surface)
+                        .frame(width: 32, height: 32)
+                        .background(Color.white.opacity(0.05))
                         .clipShape(Circle())
                 }
                 .accessibilityLabel("Close muscle panel")
@@ -142,26 +211,26 @@ private struct MusclePanel: View {
             HStack(spacing: DS.spacingM) {
                 NavigationLink(value: muscle) {
                     Text("View Exercises")
-                        .font(AppFont.bodyMedium)
+                        .font(.system(size: 16, weight: .semibold))
                         .frame(maxWidth: .infinity)
-                        .frame(height: 48)
+                        .frame(height: 52)
                         .background(AppColor.accent)
                         .foregroundStyle(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: DS.radius, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
+                        .accentGlow()
                 }
                 .buttonStyle(PressableStyle())
                 .accessibilityLabel("View \(muscle.displayName) exercises")
 
                 NavigationLink(value: muscle) {
-                    Text("Add to Workout")
-                        .font(AppFont.bodyMedium)
-                        .frame(maxWidth: 150)
-                        .frame(height: 48)
-                        .background(AppColor.card)
-                        .foregroundStyle(AppColor.textPrimary)
-                        .clipShape(RoundedRectangle(cornerRadius: DS.radius, style: .continuous))
+                    Image(systemName: "plus")
+                        .font(.system(size: 20, weight: .light))
+                        .foregroundStyle(AppColor.textSecondary)
+                        .frame(width: 52, height: 52)
+                        .background(Color.white.opacity(0.06))
+                        .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
                         .overlay(
-                            RoundedRectangle(cornerRadius: DS.radius, style: .continuous)
+                            RoundedRectangle(cornerRadius: 15, style: .continuous)
                                 .strokeBorder(AppColor.border, lineWidth: 1)
                         )
                 }
@@ -169,9 +238,16 @@ private struct MusclePanel: View {
                 .accessibilityLabel("Choose a \(muscle.displayName) exercise to add to a workout")
             }
         }
-        .cardStyle(padding: DS.spacingL)
-        .padding(.horizontal, DS.spacing)
-        .padding(.bottom, DS.spacingS)
-        .shadow(color: .black.opacity(0.25), radius: 20, y: 8)
+        .padding(DS.spacingL)
+        .background(AppColor.card.opacity(0.94))
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: DS.radiusL + 2, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: DS.radiusL + 2, style: .continuous)
+                .strokeBorder(Color.white.opacity(0.08), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.5), radius: 24, y: -4)
+        .padding(.horizontal, DS.spacingM)
+        .padding(.bottom, DS.spacingM)
     }
 }

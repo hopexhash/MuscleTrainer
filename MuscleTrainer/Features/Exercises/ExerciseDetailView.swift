@@ -13,22 +13,27 @@ struct ExerciseDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: DS.spacingL) {
-                ExerciseMediaView(exercise: exercise)
+                ExerciseMediaView(exercise: exercise, height: 250)
+
+                Text(exercise.name)
+                    .font(.system(size: 29, weight: .bold))
+                    .kerning(-1)
+                    .foregroundStyle(AppColor.textPrimary)
 
                 tagRow
+
+                targetSection
 
                 instructionsSection
 
                 recommendationSection
-
-                targetSection
             }
             .padding(.horizontal, DS.spacing)
             .padding(.bottom, 120)
         }
         .background(AppColor.background)
-        .navigationTitle(exercise.name)
-        .navigationBarTitleDisplayMode(.large)
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
@@ -45,12 +50,25 @@ struct ExerciseDetailView: View {
         }
         .safeAreaInset(edge: .bottom) {
             HStack(spacing: DS.spacingM) {
-                SecondaryButton(title: "Add to Workout", icon: "plus") {
+                PrimaryButton(title: "Add to Workout") {
                     appState.exerciseToAdd = exercise
                 }
-                PrimaryButton(title: "Start Exercise", icon: "play.fill") {
+                Button {
                     startQuickSession()
+                } label: {
+                    Text("Start")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(AppColor.textPrimary.opacity(0.85))
+                        .frame(width: 100, height: DS.buttonHeight)
+                        .background(AppColor.surface)
+                        .clipShape(RoundedRectangle(cornerRadius: DS.radius, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: DS.radius, style: .continuous)
+                                .strokeBorder(AppColor.border, lineWidth: 1)
+                        )
                 }
+                .buttonStyle(PressableStyle())
+                .accessibilityLabel("Start \(exercise.name) now")
             }
             .padding(.horizontal, DS.spacing)
             .padding(.top, DS.spacingS)
@@ -101,25 +119,27 @@ struct ExerciseDetailView: View {
     }
 
     private var instructionsSection: some View {
-        VStack(alignment: .leading, spacing: DS.spacingM) {
+        VStack(alignment: .leading, spacing: DS.spacing) {
             SectionHeader(title: "How to perform")
-            VStack(alignment: .leading, spacing: DS.spacingM) {
+            VStack(alignment: .leading, spacing: 18) {
                 ForEach(Array(exercise.instructions.enumerated()), id: \.offset) { index, step in
-                    HStack(alignment: .top, spacing: DS.spacingM) {
+                    HStack(alignment: .top, spacing: DS.spacing) {
+                        // Ghost numeral, per the design language.
                         Text("\(index + 1)")
-                            .font(AppFont.metaSmall)
-                            .foregroundStyle(AppColor.accent)
-                            .frame(width: 24, height: 24)
-                            .background(AppColor.accent.opacity(0.12))
-                            .clipShape(Circle())
+                            .font(.system(size: 22, weight: .bold))
+                            .kerning(-0.5)
+                            .foregroundStyle(AppColor.textFaint)
+                            .frame(minWidth: 30, alignment: .leading)
+                            .monospacedDigit()
                         Text(step)
-                            .font(AppFont.body)
-                            .foregroundStyle(AppColor.textPrimary)
+                            .font(.system(size: 15.5))
+                            .lineSpacing(3)
+                            .foregroundStyle(AppColor.textPrimary.opacity(0.85))
                             .fixedSize(horizontal: false, vertical: true)
+                            .padding(.top, 3)
                     }
                 }
             }
-            .cardStyle()
         }
     }
 
@@ -137,45 +157,45 @@ struct ExerciseDetailView: View {
 
     private var targetSection: some View {
         VStack(alignment: .leading, spacing: DS.spacingM) {
-            SectionHeader(title: "Target muscles")
-            VStack(alignment: .leading, spacing: DS.spacing) {
-                MuscleHeatmapView(
+            SectionHeader(title: "Muscles worked")
+            HStack(spacing: DS.spacing) {
+                AnatomyFigureView(
+                    side: exercise.primaryMuscle.isBackFacing ? .back : .front,
                     gender: profile?.anatomyGender ?? .male,
-                    heatmap: targetHeatmap,
-                    height: 200
+                    selectedMuscles: Set(exercise.primaryMuscles),
+                    secondaryMuscles: Set(exercise.secondaryMuscles),
+                    isInteractive: false
                 )
-                HStack(spacing: DS.spacingL) {
-                    legend(color: AppColor.accent, label: "Primary")
-                    legend(color: AppColor.accent.opacity(0.4), label: "Secondary")
-                }
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Primary: " + exercise.primaryMuscles.map(\.displayName).joined(separator: ", "))
-                        .font(AppFont.meta)
-                        .foregroundStyle(AppColor.textPrimary)
-                    if !exercise.secondaryMuscles.isEmpty {
-                        Text("Secondary: " + exercise.secondaryMuscles.map(\.displayName).joined(separator: ", "))
-                            .font(AppFont.meta)
-                            .foregroundStyle(AppColor.textSecondary)
+                .frame(width: 74, height: 150)
+                .accessibilityHidden(true)
+
+                VStack(alignment: .leading, spacing: 11) {
+                    ForEach(exercise.primaryMuscles) { muscle in
+                        muscleRow(muscle, role: "PRIMARY", color: AppColor.accent)
+                    }
+                    ForEach(exercise.secondaryMuscles) { muscle in
+                        muscleRow(muscle, role: "SECONDARY", color: AppColor.muscleSecondary)
                     }
                 }
+                Spacer(minLength: 0)
             }
-            .cardStyle()
+            .cardStyle(radius: DS.radiusL)
         }
     }
 
-    private var targetHeatmap: [Muscle: Double] {
-        var map: [Muscle: Double] = [:]
-        for m in exercise.primaryMuscles { map[m] = 1.0 }
-        for m in exercise.secondaryMuscles { map[m] = 0.4 }
-        return map
-    }
-
-    private func legend(color: Color, label: String) -> some View {
-        HStack(spacing: 6) {
-            Circle().fill(color).frame(width: 8, height: 8)
-            Text(label)
-                .font(AppFont.metaSmall)
-                .foregroundStyle(AppColor.textSecondary)
+    private func muscleRow(_ muscle: Muscle, role: String, color: Color) -> some View {
+        HStack(spacing: 10) {
+            RoundedRectangle(cornerRadius: 3, style: .continuous)
+                .fill(color)
+                .frame(width: 9, height: 9)
+            Text(muscle.displayName)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(AppColor.textPrimary)
+            Spacer()
+            Text(role)
+                .font(.system(size: 10, weight: .semibold))
+                .kerning(0.4)
+                .foregroundStyle(AppColor.textTertiary)
         }
     }
 }
