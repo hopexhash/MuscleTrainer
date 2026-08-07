@@ -5,7 +5,7 @@ A modern, native iOS fitness app built around an **interactive human anatomy mod
 ## Features
 
 - **Interactive anatomy** — vector muscle regions (front/back, male/female) with tap selection, blue glow highlighting, and haptic feedback. Paths are cached and hit-tested against real shapes, not invisible rectangles.
-- **Exercise library** — 85 realistic exercises covering 20+ muscle groups, with search, difficulty/equipment filter chips, step-by-step instructions, set recommendations per goal, and target-muscle visualizations.
+- **Exercise library** — 97 realistic exercises covering 20+ muscle groups, with search, difficulty/equipment filter chips, step-by-step instructions, set recommendations per goal, and target-muscle visualizations.
 - **AI Coach** — a sequential, card-based questionnaire (focus → muscles → goal → experience → location → equipment → duration → intensity) feeding a deterministic local workout generator behind an `AIWorkoutService` protocol, ready to swap in a real LLM backend. Generated workouts support swap, remove, reorder, tune, make easier/harder, shorten, and regenerate.
 - **Workout builder** — name → pick muscles on the anatomy figure → pick exercises → tune sets/reps/rest, with drag-to-reorder.
 - **Workout player** — set-by-set logging with weight/reps input, automatic rest timer (+15s / skip, haptic on finish), and a completion screen with duration, sets, reps, volume, and a trained-muscle heatmap.
@@ -27,7 +27,7 @@ MuscleTrainer/
   App/                  Entry point, root tabs, app state, seeding
   Core/DesignSystem/    Colors, tokens, typography, reusable components
   Core/Services/        Haptics
-  Models/               Muscle, Exercise (+85-exercise catalog), SwiftData models
+  Models/               Muscle, Exercise (+97-exercise catalog), SwiftData models
   Features/
     Anatomy/            Shape store (vector regions), interactive figure, Train screen
     Exercises/          Library, detail
