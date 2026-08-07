@@ -30,6 +30,10 @@ struct AnatomyFigureView: View {
                 context.fill(skeleton.limbs.applying(transform), with: .color(AppColor.bodyLimb))
 
                 let hasSelection = !selectedMuscles.isEmpty
+                // Background-colored seam so adjacent muscles never merge into one shape.
+                let scale = min(size.width / AnatomyShapeStore.designSize.width,
+                                size.height / AnatomyShapeStore.designSize.height)
+                let seamWidth = max(0.6, 2 * scale)
 
                 for region in regions {
                     let path = region.path.applying(transform)
@@ -58,6 +62,8 @@ struct AnatomyFigureView: View {
                     } else {
                         context.fill(path, with: .color(AppColor.muscleIdle.opacity(hasSelection ? 0.4 : 1)))
                     }
+
+                    context.stroke(path, with: .color(AppColor.background), lineWidth: seamWidth)
                 }
             }
             .contentShape(Rectangle())
