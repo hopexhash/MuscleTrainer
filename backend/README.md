@@ -28,6 +28,9 @@ The app refreshes the manifest on launch and when you tap Refresh. Uploading req
 
 Uploads live on the server's disk, so the host **must have a persistent volume** — on ephemeral free tiers your videos disappear on every restart. The server reads `VIDEOS_DIR` so you can point it at the mounted volume. Three good options, all giving you an `https://` URL that works in the app with zero ATS fuss:
 
+### Free: Cloudflare Workers + R2
+See [`backend-cloudflare/`](../backend-cloudflare/README.md) — the same server ported to Cloudflare Workers with videos in R2. Always-on, free within generous limits (10 GB storage). Recommended if you want $0.
+
 ### Railway (easiest, all in the browser — ~$5/mo usage-based)
 1. Go to [railway.app](https://railway.app) → New Project → **Deploy from GitHub repo** → pick this repo.
 2. In the service settings, set **Root Directory** to `backend`.

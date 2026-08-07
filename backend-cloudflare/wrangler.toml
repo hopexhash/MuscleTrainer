@@ -1,0 +1,27 @@
+# Cloudflare Workers deployment for the MuscleTrainer media server.
+#
+# One-time setup (from this backend-cloudflare/ directory):
+#   npx wrangler login
+#   npx wrangler r2 bucket create muscletrainer-videos
+#   npx wrangler deploy
+#
+# Then change ADMIN_TOKEN below (or in the Cloudflare dashboard → your worker →
+# Settings → Variables) and redeploy. The deploy output prints your
+# https://muscletrainer-media.<your-subdomain>.workers.dev URL — that's what you
+# open in a browser to upload videos, and what you paste into the app under
+# Profile → Exercise videos.
+
+name = "muscletrainer-media"
+main = "worker.js"
+compatibility_date = "2025-06-01"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+[[r2_buckets]]
+binding = "VIDEOS"
+bucket_name = "muscletrainer-videos"
+
+[vars]
+ADMIN_TOKEN = "muscle-admin"
