@@ -1,3 +1,4 @@
+import PhotosUI
 import SwiftUI
 import SwiftData
 
@@ -97,8 +98,68 @@ struct WorkoutCard: View {
     let workout: Workout
 
     @Environment(AppState.self) private var appState
+    @Environment(\.modelContext) private var context
+    @State private var showVideoPicker = false
+    @State private var pickerItem: PhotosPickerItem?
+
+    private var coverURL: URL? {
+        WorkoutCoverStore.url(for: workout.coverVideoFileName)
+    }
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // The user's looping cover video, or a quiet add affordance.
+            if let coverURL {
+                LoopingVideoView(url: coverURL)
+                    .frame(height: 132)
+                    .frame(maxWidth: .infinity)
+                    .clipped()
+                    .contentShape(Rectangle())
+                    .accessibilityLabel("Cover video for \(workout.name)")
+            }
+
+            innerContent
+                .padding(16)
+        }
+        .background(AppColor.card)
+        .clipShape(RoundedRectangle(cornerRadius: DS.radiusL, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: DS.radiusL, style: .continuous)
+                .strokeBorder(AppColor.border, lineWidth: 1)
+        )
+        .contextMenu {
+            Button {
+                showVideoPicker = true
+            } label: {
+                Label(coverURL == nil ? "Add Cover Video" : "Replace Cover Video",
+                      systemImage: "video.badge.plus")
+            }
+            if coverURL != nil {
+                Button(role: .destructive) {
+                    WorkoutCoverStore.deleteCover(for: workout)
+                    try? context.save()
+                } label: {
+                    Label("Remove Cover Video", systemImage: "video.slash")
+                }
+            }
+        }
+        .photosPicker(isPresented: $showVideoPicker, selection: $pickerItem, matching: .videos)
+        .onChange(of: pickerItem) {
+            guard let item = pickerItem else { return }
+            pickerItem = nil
+            Task {
+                if let picked = try? await item.loadTransferable(type: PickedVideo.self) {
+                    await MainActor.run {
+                        WorkoutCoverStore.saveCover(from: picked.url, for: workout)
+                        try? context.save()
+                        Haptics.success()
+                    }
+                }
+            }
+        }
+    }
+
+    private var innerContent: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
@@ -143,6 +204,21 @@ struct WorkoutCard: View {
                 Text("\(workout.exercises.count) exercises")
                 Text("~\(workout.estimatedMinutes) min")
                 Spacer()
+                if coverURL == nil {
+                    Button {
+                        showVideoPicker = true
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "video.badge.plus")
+                                .font(.system(size: 11, weight: .semibold))
+                            Text("Add video")
+                                .font(.system(size: 12, weight: .semibold))
+                        }
+                        .foregroundStyle(AppColor.accentBright)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Add a cover video to \(workout.name)")
+                }
             }
             .font(.system(size: 12.5))
             .foregroundStyle(AppColor.textTertiary)
@@ -155,7 +231,6 @@ struct WorkoutCard: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .cardStyle(radius: DS.radiusL)
     }
 }
 
@@ -203,6 +278,15 @@ struct WorkoutDetailView: View {
     var body: some View {
         List {
             Section {
+                if let coverURL = WorkoutCoverStore.url(for: workout.coverVideoFileName) {
+                    LoopingVideoView(url: coverURL)
+                        .frame(height: 170)
+                        .frame(maxWidth: .infinity)
+                        .clipShape(RoundedRectangle(cornerRadius: DS.radiusL, style: .continuous))
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                        .accessibilityLabel("Cover video for \(workout.name)")
+                }
                 HStack(spacing: DS.spacingM) {
                     MetricCard(value: "\(workout.exercises.count)", label: "Exercises")
                     MetricCard(value: "~\(workout.estimatedMinutes) min", label: "Duration")
@@ -240,6 +324,7 @@ struct WorkoutDetailView: View {
         }
         .confirmationDialog("Delete this workout?", isPresented: $showDeleteConfirmation, titleVisibility: .visible) {
             Button("Delete", role: .destructive) {
+                WorkoutCoverStore.deleteCover(for: workout)
                 context.delete(workout)
                 try? context.save()
                 dismiss()

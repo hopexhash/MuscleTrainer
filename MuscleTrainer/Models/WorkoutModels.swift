@@ -11,6 +11,8 @@ final class Workout {
     var isAIGenerated: Bool
     var goalRaw: String
     var estimatedMinutes: Int
+    /// File name of the user's looping cover video (in WorkoutCoverStore.directory).
+    var coverVideoFileName: String?
     @Relationship(deleteRule: .cascade, inverse: \WorkoutExercise.workout)
     var exercises: [WorkoutExercise]
 
@@ -26,6 +28,7 @@ final class Workout {
         self.isAIGenerated = isAIGenerated
         self.goalRaw = goal.rawValue
         self.estimatedMinutes = estimatedMinutes
+        self.coverVideoFileName = nil
         self.exercises = []
     }
 
