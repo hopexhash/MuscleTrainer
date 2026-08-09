@@ -130,10 +130,11 @@ struct WorkoutCard: View {
                 } label: {
                     Image(systemName: "play.fill")
                         .font(.system(size: 14))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(AppColor.onAccent)
                         .frame(width: 44, height: 44)
                         .background(AppColor.accent)
                         .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+                        .shadow(color: AppColor.accent.opacity(0.45), radius: 10)
                 }
                 .buttonStyle(PressableStyle())
                 .accessibilityLabel("Start \(workout.name)")

@@ -197,11 +197,11 @@ private struct MuscleSheet: View {
 
             NavigationLink(value: muscle) {
                 Text("View Exercises")
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.system(size: 16, weight: .bold))
                     .frame(maxWidth: .infinity)
                     .frame(height: 52)
                     .background(AppColor.accent)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(AppColor.onAccent)
                     .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
                     .accentGlow()
             }

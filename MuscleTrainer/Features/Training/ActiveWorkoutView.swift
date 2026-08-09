@@ -253,8 +253,8 @@ struct ActiveWorkoutView: View {
                     controller.skipRest()
                 } label: {
                     Text("Skip")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(.white)
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(AppColor.onAccent)
                         .padding(.horizontal, 26)
                         .frame(height: 46)
                         .background(AppColor.accent)

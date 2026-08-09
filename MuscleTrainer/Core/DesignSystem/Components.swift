@@ -13,15 +13,15 @@ struct PrimaryButton: View {
             HStack(spacing: DS.spacingS) {
                 if let icon {
                     Image(systemName: icon)
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.system(size: 15, weight: .bold))
                 }
                 Text(title)
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(.system(size: 17, weight: .bold))
             }
             .frame(maxWidth: .infinity)
             .frame(height: DS.buttonHeight)
             .background(isEnabled ? AppColor.accent : AppColor.accent.opacity(0.35))
-            .foregroundStyle(.white)
+            .foregroundStyle(AppColor.onAccent)
             .clipShape(RoundedRectangle(cornerRadius: DS.radius, style: .continuous))
             .accentGlow()
         }
@@ -98,18 +98,15 @@ struct SegmentedSelector<T: Hashable>: View {
                     withAnimation(DS.spring) { selection = option }
                 } label: {
                     Text(label(option))
-                        .font(AppFont.meta)
-                        .foregroundStyle(option == selection ? AppColor.textPrimary : AppColor.textSecondary)
+                        .font(.system(size: 13, weight: option == selection ? .bold : .medium))
+                        .foregroundStyle(option == selection ? AppColor.onAccent : AppColor.textSecondary)
                         .frame(maxWidth: .infinity)
                         .frame(height: 34)
                         .background {
                             if option == selection {
                                 RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                    .fill(AppColor.segmentOn)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                            .strokeBorder(AppColor.accent.opacity(0.35), lineWidth: 1)
-                                    )
+                                    .fill(AppColor.accent)
+                                    .shadow(color: AppColor.accent.opacity(0.5), radius: 8)
                                     .matchedGeometryEffect(id: "segment", in: segmentNamespace)
                             }
                         }
@@ -146,7 +143,7 @@ struct FilterChip: View {
                 .padding(.horizontal, 14)
                 .frame(height: 32)
                 .background(isSelected ? AppColor.accent : AppColor.surface)
-                .foregroundStyle(isSelected ? .white : AppColor.textSecondary)
+                .foregroundStyle(isSelected ? AppColor.onAccent : AppColor.textSecondary)
                 .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 9, style: .continuous)

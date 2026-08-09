@@ -123,9 +123,9 @@ private struct AIOrb: View {
                 .fill(
                     RadialGradient(
                         colors: [
-                            Color(red: 0.36, green: 0.72, blue: 1.0),
+                            Color(red: 0.498, green: 0.906, blue: 0.973),
                             AppColor.accent,
-                            Color(red: 0.043, green: 0.306, blue: 0.588),
+                            Color(red: 0.039, green: 0.333, blue: 0.400),
                         ],
                         center: UnitPoint(x: 0.38, y: 0.32),
                         startRadius: 2, endRadius: 60

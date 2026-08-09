@@ -81,9 +81,10 @@ extension View {
         modifier(CardBackground(padding: padding, radius: radius))
     }
 
-    /// The signature blue glow under primary CTAs.
+    /// The signature cyan glow under primary CTAs and active controls.
     func accentGlow() -> some View {
-        shadow(color: AppColor.accent.opacity(0.28), radius: 14, y: 8)
+        shadow(color: AppColor.accent.opacity(0.35), radius: 14, y: 6)
+            .shadow(color: AppColor.accent.opacity(0.22), radius: 24)
     }
 }
 

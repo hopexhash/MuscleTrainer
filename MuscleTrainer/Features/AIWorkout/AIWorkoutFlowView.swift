@@ -218,10 +218,10 @@ struct AIWorkoutFlowView: View {
                         VStack(spacing: DS.spacingS) {
                             Image(systemName: icon(option))
                                 .font(.system(size: 24, weight: .light))
-                                .foregroundStyle(option == selected ? .white : AppColor.accent)
+                                .foregroundStyle(option == selected ? AppColor.onAccent : AppColor.accent)
                             Text(label(option))
                                 .font(AppFont.bodyMedium)
-                                .foregroundStyle(option == selected ? .white : AppColor.textPrimary)
+                                .foregroundStyle(option == selected ? AppColor.onAccent : AppColor.textPrimary)
                                 .multilineTextAlignment(.center)
                         }
                         .frame(maxWidth: .infinity)

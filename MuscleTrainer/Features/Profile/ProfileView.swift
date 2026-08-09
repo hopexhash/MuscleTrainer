@@ -34,7 +34,7 @@ struct ProfileView: View {
                             .fill(
                                 LinearGradient(
                                     colors: [
-                                        Color(red: 0.118, green: 0.306, blue: 0.502),
+                                        Color(red: 0.075, green: 0.333, blue: 0.404),
                                         AppColor.bodyLimb,
                                     ],
                                     startPoint: .topLeading, endPoint: .bottomTrailing
