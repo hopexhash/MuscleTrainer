@@ -45,7 +45,7 @@ def flatten(segs, n=22):
     return out
 
 def warp_female(pts):
-    ctrl = [(0,0.97),(120,0.96),(160,0.90),(240,0.90),(330,0.86),(400,1.00),(440,1.06),(560,1.00),(780,0.97)]
+    ctrl = [(0,0.95),(100,0.93),(140,0.87),(210,0.86),(260,0.84),(320,0.80),(370,0.94),(420,1.05),(470,1.02),(560,0.98),(660,0.94),(780,0.95)]
     out = []
     for x, y in pts:
         f = ctrl[-1][1]
@@ -172,18 +172,29 @@ BACK_DETAILS = [
     (True, [(370,442),(380,470)], False),
 ]
 
+
+# Female-specific shapes (final coordinates, not warped)
+FEMALE_CHEST = [(223,166),(242,162),(258,170),(266,186),(265,206),(256,222),(240,230),(226,228),(222,214),(221,188)]
+FEMALE_GLUTES = [(224,406),(252,396),(276,410),(285,442),(277,478),(254,494),(228,488),(219,450)]
+FEMALE_QUADS = [(233,446),(256,438),(268,470),(266,514),(258,552),(243,562),(232,548),(227,504),(228,470)]
+
 # ───────────────────────── build/emit ─────────────────────────
 
-def build_view(outline_r, muscles, details, female=False):
+def build_view(outline_r, muscles, details, female=False, overrides=None):
     wf = warp_female if female else (lambda p: p)
+    overrides = overrides or {}
     full = outline_r + mirror_pts(list(reversed(outline_r))[1:-1])
     view = {"outline": segs_to_path(cr_cubics(wf(full), True)), "muscles": [], "details": []}
     for mid, mirrored, spec in muscles:
         paths = []
+        use_wf = wf
+        if mid in overrides:
+            spec = overrides[mid]
+            use_wf = lambda p: p  # override points are already in final coordinates
         for pts in blobs(spec):
-            paths.append(segs_to_path(cr_cubics(wf(pts), True)))
+            paths.append(segs_to_path(cr_cubics(use_wf(pts), True)))
             if mirrored:
-                paths.append(segs_to_path(cr_cubics(wf(mirror_pts(pts)), True)))
+                paths.append(segs_to_path(cr_cubics(use_wf(mirror_pts(pts)), True)))
         view["muscles"].append({"id": mid, "paths": paths})
     for mirrored, pts, closed in details:
         view["details"].append(segs_to_path(cr_cubics(wf(pts), closed), closed))
@@ -246,12 +257,28 @@ def emit_swift(data, path):
 if __name__ == "__main__":
     preview("front", FRONT_OUTLINE_R, FRONT_MUSCLES, FRONT_DETAILS, "preview_front.png")
     preview("back", BACK_OUTLINE_R, BACK_MUSCLES, BACK_DETAILS, "preview_back.png")
+    def fem_preview(view_name, outline_r, muscles, details, overrides, out):
+        wm = []
+        for mid, mirrored, spec in muscles:
+            if mid in overrides:
+                wm.append((mid, mirrored, overrides[mid]))
+            else:
+                fspec = [warp_female(b) for b in blobs(spec)]
+                wm.append((mid, mirrored, fspec if len(fspec) > 1 else fspec[0]))
+        wd = [(m, warp_female(p), c) for m, p, c in details]
+        preview(view_name, warp_female(outline_r), wm, wd, out)
+    fem_preview("frontF", FRONT_OUTLINE_R, FRONT_MUSCLES, FRONT_DETAILS,
+                {"chest": FEMALE_CHEST, "quads": FEMALE_QUADS}, "preview_front_f.png")
+    fem_preview("backF", BACK_OUTLINE_R, BACK_MUSCLES, BACK_DETAILS,
+                {"glutes": FEMALE_GLUTES}, "preview_back_f.png")
     if "--emit" in sys.argv:
         data = {
             "front":  build_view(FRONT_OUTLINE_R, FRONT_MUSCLES, FRONT_DETAILS),
             "back":   build_view(BACK_OUTLINE_R, BACK_MUSCLES, BACK_DETAILS),
-            "frontF": build_view(FRONT_OUTLINE_R, FRONT_MUSCLES, FRONT_DETAILS, female=True),
-            "backF":  build_view(BACK_OUTLINE_R, BACK_MUSCLES, BACK_DETAILS, female=True),
+            "frontF": build_view(FRONT_OUTLINE_R, FRONT_MUSCLES, FRONT_DETAILS, female=True,
+                                 overrides={"chest": FEMALE_CHEST, "quads": FEMALE_QUADS}),
+            "backF":  build_view(BACK_OUTLINE_R, BACK_MUSCLES, BACK_DETAILS, female=True,
+                                 overrides={"glutes": FEMALE_GLUTES}),
         }
         json.dump(data, open("anatomy.json", "w"))
         print("wrote anatomy.json")
