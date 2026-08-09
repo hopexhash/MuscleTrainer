@@ -1,32 +1,24 @@
 #!/usr/bin/env python3
 """
-MuscleTrainer anatomy generator — original line-art figure.
+MuscleTrainer anatomy generator v2 — detailed line-art figure from the user's
+reference: light body, dark outlines, flared arms with hands, segmented abs,
+sartorius/patella/gastroc details. Front = left of reference, back = right.
 
-Authors the figure once (right-half point lists, Catmull-Rom smoothed into
-cubics), then emits:
-  - preview PNGs (front/back) for visual iteration
-  - anatomy.json (path strings for the HTML prototype)
-  - AnatomyArt.swift (same path strings for the app)
-
-Design space: 360 x 780. Centerline x = 180.
+Design space: 440 x 780. Centerline x = 220.
+Emits preview PNGs, anatomy.json (prototype) and AnatomyArt.swift (app).
 """
-import json, math, sys
+import json, sys
 from PIL import Image, ImageDraw
 
-CX = 180.0
-W, H = 360, 780
-
-# ───────────────────────── helpers ─────────────────────────
+CX = 220.0
+W, H = 440, 780
 
 def cr_cubics(pts, closed=True):
-    """Catmull-Rom -> cubic segments [(p1,c1,c2,p2)...]. Duplicate a point to sharpen."""
-    n = len(pts)
-    segs = []
+    n = len(pts); segs = []
     rng = range(n) if closed else range(n - 1)
     for i in rng:
         p0 = pts[(i - 1) % n] if closed else pts[max(i - 1, 0)]
-        p1 = pts[i]
-        p2 = pts[(i + 1) % n]
+        p1 = pts[i]; p2 = pts[(i + 1) % n]
         p3 = pts[(i + 2) % n] if closed else pts[min(i + 2, n - 1)]
         c1 = (p1[0] + (p2[0] - p0[0]) / 6.0, p1[1] + (p2[1] - p0[1]) / 6.0)
         c2 = (p2[0] - (p3[0] - p1[0]) / 6.0, p2[1] - (p3[1] - p1[1]) / 6.0)
@@ -47,15 +39,13 @@ def flatten(segs, n=22):
     for (p1, c1, c2, p2) in segs:
         for i in range(n):
             t = i / n; mt = 1 - t
-            x = mt**3*p1[0] + 3*mt*mt*t*c1[0] + 3*mt*t*t*c2[0] + t**3*p2[0]
-            y = mt**3*p1[1] + 3*mt*mt*t*c1[1] + 3*mt*t*t*c2[1] + t**3*p2[1]
-            out.append((x, y))
+            out.append((mt**3*p1[0] + 3*mt*mt*t*c1[0] + 3*mt*t*t*c2[0] + t**3*p2[0],
+                        mt**3*p1[1] + 3*mt*mt*t*c1[1] + 3*mt*t*t*c2[1] + t**3*p2[1]))
     out.append(segs[-1][3])
     return out
 
 def warp_female(pts):
-    """Y-dependent x-scale around the centerline: narrower shoulders, wider hips."""
-    ctrl = [(0,0.97),(120,0.96),(165,0.90),(240,0.90),(330,0.85),(392,1.00),(430,1.06),(560,1.00),(780,0.97)]
+    ctrl = [(0,0.97),(120,0.96),(160,0.90),(240,0.90),(330,0.86),(400,1.00),(440,1.06),(560,1.00),(780,0.97)]
     out = []
     for x, y in pts:
         f = ctrl[-1][1]
@@ -68,106 +58,132 @@ def warp_female(pts):
         out.append((CX + (x - CX) * f, y))
     return out
 
+def blobs(spec):
+    """Muscle spec points may be one point-list or a list of point-lists."""
+    return spec if isinstance(spec[0], list) else [spec]
+
 # ───────────────────────── FRONT ─────────────────────────
-# Right half of the body outline, crown → crotch (mirrored automatically).
+# Right half of outline, crown → crotch. Arms flared, open hands.
 
 FRONT_OUTLINE_R = [
-    (180,18),(200,22),(212,40),(214,62),          # crown → temple (narrower head)
-    (211,84),(202,100),(192,108),                 # cheek → jaw
-    (190,122),(194,134),                          # neck side
-    (222,144),(252,154),(274,164),                # trap slope → shoulder pt
-    (290,176),(298,196),(298,218),                # delt outer
-    (303,256),(310,294),(316,328),                # upper-arm outer → elbow
-    (323,360),(330,392),(334,422),                # forearm outer → wrist
-    (345,450),(350,466),(348,484),(340,492),      # hand outer edge
-    (329,492),(325,478),                          # fingertips
-    (317,484),(308,476),(306,458),                # finger/thumb mass
-    (304,436),                                    # wrist inner
-    (296,398),(289,364),(283,332),                # forearm inner → elbow inner
-    (276,298),(268,264),(258,236),                # upper-arm inner → armpit
-    (255,234),                                    # armpit crease (tight)
-    (249,262),(244,298),(240,330),                # chest side → waist
-    (245,356),(252,378),(258,398),(261,416),      # hip flare
-    (259,452),(254,492),(247,528),(240,558),      # outer thigh → knee
-    (243,582),(244,608),(238,644),(228,678),(220,706),  # calf outer → ankle
-    (226,722),(230,742),(222,756),(202,760),(190,748),(188,726),(190,708), # foot + toes
-    (193,676),(196,644),(194,610),(196,576),(198,556),  # inner calf → knee inner
-    (194,528),(190,494),(186,466),(182,446),      # inner thigh → crotch
-    (180,440),
+    (220,14),(242,18),(252,36),(253,58),          # crown → temple
+    (250,80),(242,94),(232,100),                  # cheek → jaw
+    (230,112),(232,124),(240,131),                # neck side
+    (256,137),(278,144),(294,152),                # trap slope → shoulder
+    (308,162),(316,180),(318,202),                # delt cap
+    (324,236),(334,268),(344,296),                # upper arm outer → elbow
+    (356,326),(366,360),(374,394),                # forearm outer
+    (380,412),(392,434),(400,458),(396,478),(384,486), # palm edge + fingertips
+    (372,482),(362,466),                          # finger mass inner
+    (352,452),(346,432),(346,416),                # thumb / wrist inner
+    (336,382),(326,346),(316,308),                # forearm inner
+    (306,268),(296,236),(284,214),                # upper arm inner → armpit
+    (281,212),                                    # armpit crease
+    (276,232),(266,278),(258,320),                # chest side → waist
+    (264,352),(272,378),(278,400),(280,416),      # hip flare
+    (277,452),(271,500),(264,534),(260,560),      # outer thigh → knee
+    (266,590),(268,620),(260,658),(256,688),(254,706), # calf outer → ankle
+    (262,720),(264,742),(252,755),(234,756),(228,738),(228,714), # foot + toes
+    (232,676),(236,634),(234,596),(232,566),      # inner lower leg
+    (230,524),(228,478),(222,446),                # inner thigh → crotch
+    (220,438),
 ]
 
 FRONT_MUSCLES = [
-    ("traps", True, [(196,130),(226,140),(252,152),(246,158),(214,156),(197,144)]),
-    ("frontDelts", True, [(234,160),(256,158),(270,168),(276,184),(272,202),(260,206),(246,188),(234,170)]),
-    ("sideDelts", True, [(272,168),(288,178),(294,198),(293,220),(284,230),(273,212),(270,190)]),
-    ("chest", True, [(183,172),(210,168),(236,172),(247,188),(248,210),(240,232),(222,244),(200,246),(186,240),(183,208)]),
-    ("biceps", True, [(262,238),(276,244),(284,270),(289,304),(284,322),(272,320),(262,294),(258,262)]),
-    ("forearms", True, [(287,336),(299,342),(309,370),(319,402),(325,428),(315,434),(303,410),(293,378),(286,350)]),
-    ("abs", False, [(162,258),(180,254),(198,258),(206,284),(204,326),(198,372),(192,406),(180,424),(168,406),(162,372),(156,326),(154,284)]),
-    ("obliques", True, [(210,300),(224,314),(232,338),(234,362),(226,390),(214,406),(206,384),(208,344),(208,318)]),
-    ("quads", True, [(200,444),(224,426),(246,432),(256,468),(254,506),(246,538),(232,554),(216,548),(204,516),(198,480)]),
-    ("adductors", True, [(184,448),(196,456),(202,492),(200,524),(190,536),(184,500),(181,468)]),
-    ("tibialis", True, [(206,568),(220,572),(226,606),(224,648),(214,690),(206,664),(202,616)]),
-    ("calves", True, [(230,574),(240,588),(240,624),(232,656),(226,624),(226,594)]),
+    ("traps", True, [(234,128),(258,138),(282,148),(274,154),(248,152),(234,140)]),
+    ("frontDelts", True, [(288,154),(300,158),(308,170),(310,186),(304,200),(292,198),(284,180),(283,164)]),
+    ("sideDelts", True, [(306,164),(314,176),(317,196),(314,214),(304,222),(296,208),(298,186),(300,172)]),
+    ("chest", True, [(224,164),(248,160),(268,166),(279,182),(280,206),(271,228),(252,240),(230,242),(224,236),(223,200)]),
+    ("biceps", True, [(288,224),(301,232),(310,258),(315,288),(309,304),(296,300),(287,272),(284,246)]),
+    ("forearms", True, [(319,314),(333,322),(345,350),(357,384),(364,406),(354,412),(341,388),(329,352),(317,326)]),
+    # segmented rectus — 4 block rows per side (mirrored automatically)
+    ("abs", True, [
+        [(226,258),(246,254),(250,262),(248,286),(226,290),(223,266)],
+        [(225,296),(247,292),(249,300),(247,324),(225,328),(222,304)],
+        [(224,334),(246,330),(248,338),(246,362),(224,366),(221,342)],
+        [(223,372),(245,368),(247,378),(243,416),(230,432),(221,404),(220,382)],
+    ]),
+    ("obliques", True, [(254,270),(268,290),(274,322),(272,356),(263,392),(252,406),(246,372),(248,320),(250,290)]),
+    ("quads", True, [(236,446),(262,438),(275,470),(273,514),(264,552),(248,562),(236,548),(230,504),(231,470)]),
+    ("adductors", True, [(226,452),(236,464),(240,502),(234,528),(226,506),(223,472)]),
+    ("tibialis", True, [(234,596),(248,600),(252,634),(248,672),(240,700),(232,668),(230,628)]),
+    ("calves", True, [(260,600),(266,618),(262,652),(254,676),(252,640),(254,614)]),
 ]
 
-# stroke-only interior lines (both sides where mirrored=True)
 FRONT_DETAILS = [
-    # face hint: none (clean). chest centerline:
-    (False, [(180,168),(180,258)], False),
-    # linea alba + ab rows
-    (False, [(180,264),(180,430)], False),
-    (False, [(157,300),(203,300)], False),
-    (False, [(158,332),(202,332)], False),
-    (False, [(162,366),(198,366)], False),
-    # quad seam (rectus femoris)
-    (True, [(228,436),(232,480),(228,530)], False),
-    # collarbone hint
-    (True, [(186,164),(216,160),(244,166)], False),
+    # sternocleidomastoid V
+    (True, [(226,106),(230,122),(236,134)], False),
+    # clavicles
+    (True, [(226,158),(254,152),(284,158)], False),
+    # chest centerline
+    (False, [(220,164),(220,244)], False),
+    # linea alba
+    (False, [(220,252),(220,434)], False),
+    # inguinal V
+    (True, [(262,410),(232,446)], False),
+    # sartorius diagonal
+    (True, [(266,444),(242,532)], False),
+    # rectus femoris seam
+    (True, [(254,450),(251,542)], False),
+    # patella
+    (True, [(246,568),(254,574),(252,588),(242,590),(238,578)], True),
+    # finger lines
+    (True, [(378,436),(390,462)], False),
+    (True, [(370,442),(380,470)], False),
 ]
 
 # ───────────────────────── BACK ─────────────────────────
 
-BACK_OUTLINE_R = FRONT_OUTLINE_R  # same silhouette from behind
+BACK_OUTLINE_R = FRONT_OUTLINE_R
 
 BACK_MUSCLES = [
-    ("traps", True, [(181,124),(204,134),(238,150),(258,160),(242,176),(214,204),(196,226),(182,236)]),
-    ("rearDelts", True, [(254,160),(272,166),(286,180),(292,200),(288,220),(276,228),(264,206),(256,180)]),
-    ("upperBack", True, [(200,216),(228,210),(248,222),(244,246),(224,256),(204,252)]),
-    ("lats", True, [(250,236),(254,264),(246,300),(230,332),(208,342),(196,336),(198,296),(210,266),(230,248)]),
-    ("lowerBack", False, [(168,314),(180,310),(192,314),(196,350),(190,392),(180,402),(170,392),(164,350)]),
-    ("triceps", True, [(262,236),(276,246),(284,276),(288,308),(282,326),(268,322),(260,292),(258,260)]),
-    ("forearms", True, [(287,336),(299,342),(309,370),(319,402),(325,428),(315,434),(303,410),(293,378),(286,350)]),
-    ("glutes", True, [(186,402),(214,394),(240,402),(250,430),(244,458),(224,472),(198,468),(186,448)]),
-    ("hamstrings", True, [(200,482),(226,478),(244,484),(248,514),(240,546),(226,562),(208,554),(198,522)]),
-    ("calves", True, [(202,572),(224,568),(238,580),(242,614),(234,652),(220,668),(206,650),(198,610)]),
+    ("traps", True, [(222,118),(244,130),(274,144),(290,152),(272,166),(246,194),(230,220),(222,230)]),
+    ("rearDelts", True, [(292,152),(306,160),(314,176),(316,198),(308,216),(296,210),(288,188),(286,164)]),
+    ("upperBack", True, [(230,206),(258,198),(280,210),(276,236),(254,248),(234,242)]),
+    ("lats", True, [(278,244),(283,274),(274,310),(256,342),(238,354),(226,348),(228,304),(240,272),(260,254)]),
+    ("lowerBack", False, [(206,318),(220,314),(234,318),(238,354),(231,396),(220,406),(209,396),(202,354)]),
+    ("triceps", True, [(288,222),(302,230),(312,258),(318,290),(311,308),(297,304),(288,276),(285,248)]),
+    ("forearms", True, [(319,314),(333,322),(345,350),(357,384),(364,406),(354,412),(341,388),(329,352),(317,326)]),
+    ("glutes", True, [(226,412),(254,404),(276,414),(284,442),(277,472),(255,486),(231,480),(222,452)]),
+    ("hamstrings", True, [(234,494),(262,490),(277,500),(279,530),(270,560),(252,572),(237,562),(229,528)]),
+    # gastrocnemius: outer + inner heads
+    ("calves", True, [
+        [(256,594),(266,608),(263,648),(252,670),(248,636),(250,610)],
+        [(232,592),(242,602),(240,646),(232,662),(226,630),(228,606)],
+    ]),
 ]
 
 BACK_DETAILS = [
-    # spine
-    (False, [(180,130),(180,404)], False),
-    # glute seam
-    (False, [(180,408),(180,476)], False),
-    # hamstring seam
-    (True, [(224,484),(226,520),(222,556)], False),
-    # calf seam
-    (True, [(220,572),(222,608),(218,650)], False),
+    # spine + sacrum
+    (False, [(220,116),(220,408)], False),
+    (True, [(232,408),(221,432)], False),
+    # scapula line
+    (True, [(238,208),(266,226)], False),
+    # triceps horseshoe seam
+    (True, [(300,240),(304,278)], False),
+    # glute split
+    (False, [(220,412),(220,486)], False),
+    # hamstring split
+    (True, [(256,494),(258,530),(252,564)], False),
+    # achilles
+    (True, [(244,674),(242,706)], False),
+    # finger lines
+    (True, [(378,436),(390,462)], False),
+    (True, [(370,442),(380,470)], False),
 ]
 
-# ───────────────────────── build ─────────────────────────
-
-def build_outline(right_pts):
-    full = right_pts + mirror_pts(list(reversed(right_pts))[1:-1])
-    return cr_cubics(full, closed=True)
+# ───────────────────────── build/emit ─────────────────────────
 
 def build_view(outline_r, muscles, details, female=False):
     wf = warp_female if female else (lambda p: p)
-    view = {"outline": segs_to_path(cr_cubics(wf(outline_r + mirror_pts(list(reversed(outline_r))[1:-1])), True)),
-            "muscles": [], "details": []}
-    for mid, mirrored, pts in muscles:
-        paths = [segs_to_path(cr_cubics(wf(pts), True))]
-        if mirrored:
-            paths.append(segs_to_path(cr_cubics(wf(mirror_pts(pts)), True)))
+    full = outline_r + mirror_pts(list(reversed(outline_r))[1:-1])
+    view = {"outline": segs_to_path(cr_cubics(wf(full), True)), "muscles": [], "details": []}
+    for mid, mirrored, spec in muscles:
+        paths = []
+        for pts in blobs(spec):
+            paths.append(segs_to_path(cr_cubics(wf(pts), True)))
+            if mirrored:
+                paths.append(segs_to_path(cr_cubics(wf(mirror_pts(pts)), True)))
         view["muscles"].append({"id": mid, "paths": paths})
     for mirrored, pts, closed in details:
         view["details"].append(segs_to_path(cr_cubics(wf(pts), closed), closed))
@@ -175,50 +191,37 @@ def build_view(outline_r, muscles, details, female=False):
             view["details"].append(segs_to_path(cr_cubics(wf(mirror_pts(pts)), closed), closed))
     return view
 
-# ───────────────────────── preview ─────────────────────────
-
 def preview(view_name, outline_r, muscles, details, out_png):
     SC = 2
-    img = Image.new("RGB", (W*SC, H*SC), (5, 7, 10))
+    img = Image.new("RGB", (W*SC, H*SC), (5, 9, 11))
     dr = ImageDraw.Draw(img)
-    LINE = (94, 116, 142)
-    BODYF = (14, 20, 28)
-    MUSF = (26, 36, 48)
-
+    LINE = (23, 38, 46); BODYF = (232, 239, 243); MUSF = (250, 252, 253)
     def poly(segs): return [(x*SC, y*SC) for x, y in flatten(segs)]
-
     full = outline_r + mirror_pts(list(reversed(outline_r))[1:-1])
-    dr.polygon(poly(cr_cubics(full, True)), fill=BODYF, outline=LINE, width=2)
-
-    for mid, mirrored, pts in muscles:
-        for P in ([pts, mirror_pts(pts)] if mirrored else [pts]):
-            fill = (22, 135, 255) if mid == "chest" and view_name == "front" else MUSF
-            dr.polygon(poly(cr_cubics(P, True)), fill=fill, outline=LINE, width=2)
-
+    dr.polygon(poly(cr_cubics(full, True)), fill=BODYF, outline=LINE, width=3)
+    for mid, mirrored, spec in muscles:
+        for pts in blobs(spec):
+            for Pts in ([pts, mirror_pts(pts)] if mirrored else [pts]):
+                fill = (43, 212, 238) if mid == "chest" and view_name == "front" else MUSF
+                dr.polygon(poly(cr_cubics(Pts, True)), fill=fill, outline=LINE, width=3)
     for mirrored, pts, closed in details:
-        for P in ([pts, mirror_pts(pts)] if mirrored else [pts]):
-            fp = poly(cr_cubics(P, closed)) if len(P) > 2 else [(x*SC, y*SC) for x, y in P]
-            dr.line(fp, fill=LINE, width=2)
-
+        for Pts in ([pts, mirror_pts(pts)] if mirrored else [pts]):
+            dr.line(poly(cr_cubics(Pts, closed)), fill=LINE, width=3)
     img.save(out_png)
     print("wrote", out_png)
 
-
 def emit_swift(data, path):
     lines = [
-        "import SwiftUI",
-        "",
-        "/// Generated line-art anatomy: path data authored in a 360x780 design space.",
-        "/// Regenerate with scratchpad/gen_anatomy.py --emit (edits there, not here).",
+        "import SwiftUI", "",
+        "/// Generated line-art anatomy: path data authored in a 440x780 design space.",
+        "/// Regenerate with tools/gen_anatomy.py --emit (edit there, not here).",
         "enum AnatomyArt {",
-        "    static let designSize = CGSize(width: 360, height: 780)",
-        "",
+        f"    static let designSize = CGSize(width: {W}, height: {H})", "",
         "    struct ViewArt {",
         "        let outline: String",
         "        let muscles: [(Muscle, [String])]",
         "        let details: [String]",
-        "    }",
-        "",
+        "    }", "",
     ]
     names = {"front": "maleFront", "back": "maleBack", "frontF": "femaleFront", "backF": "femaleBack"}
     for key, name in names.items():

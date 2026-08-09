@@ -67,10 +67,10 @@ enum AppColor {
         light: Color.black.opacity(0.07),
         dark: Color.white.opacity(0.06)
     )
-    /// Muscle fill when idle: #1A2430 dark
+    /// Muscle fill when idle — near-white line-art fill.
     static let muscleIdle = Color(
-        light: Color(red: 0.784, green: 0.816, blue: 0.855),
-        dark: Color(red: 0.106, green: 0.157, blue: 0.192)
+        light: .white,
+        dark: Color(red: 0.984, green: 0.992, blue: 0.996)
     )
     /// Secondary-worked muscle: #17558C dark
     static let muscleSecondary = Color(
@@ -79,26 +79,23 @@ enum AppColor {
     )
     /// Heat tier mid: #1663A8
     static let heatMid = Color(red: 0.082, green: 0.502, blue: 0.627)
-    /// Heat tier low: #1B3550
+    /// Heat tier low — light cyan wash on the white figure.
     static let heatLow = Color(
-        light: Color(red: 0.737, green: 0.816, blue: 0.894),
-        dark: Color(red: 0.071, green: 0.200, blue: 0.247)
+        light: Color(red: 0.663, green: 0.902, blue: 0.949),
+        dark: Color(red: 0.663, green: 0.902, blue: 0.949)
     )
-    /// Body silhouette (head/torso): #101821 dark
+    /// Anatomy figure ground — light in both modes, per the line-art style.
     static let bodyFill = Color(
-        light: Color(red: 0.878, green: 0.898, blue: 0.925),
-        dark: Color(red: 0.063, green: 0.102, blue: 0.129)
+        light: Color(red: 0.937, green: 0.953, blue: 0.965),
+        dark: Color(red: 0.910, green: 0.937, blue: 0.953)
     )
     /// Body limbs/neck, slightly darker: #0C1219 dark
     static let bodyLimb = Color(
         light: Color(red: 0.906, green: 0.922, blue: 0.941),
         dark: Color(red: 0.047, green: 0.078, blue: 0.102)
     )
-    /// Anatomy line-art stroke: #5E748E dark / #55637A light
-    static let anatomyLine = Color(
-        light: Color(red: 0.333, green: 0.388, blue: 0.478),
-        dark: Color(red: 0.369, green: 0.478, blue: 0.541)
-    )
+    /// Anatomy line-art ink: #17262E in both modes
+    static let anatomyLine = Color(red: 0.090, green: 0.149, blue: 0.180)
     static let success = Color(red: 0.20, green: 0.78, blue: 0.47)
     static let destructive = Color(red: 1.0, green: 0.32, blue: 0.32)
 }
