@@ -163,81 +163,63 @@ private struct MuscleSheet: View {
     }
 
     var body: some View {
-        VStack(spacing: DS.spacing) {
-            HStack(spacing: 14) {
-                // Mini figure with the muscle lit.
-                AnatomyFigureView(
-                    side: muscle.isBackFacing ? .back : .front,
-                    gender: gender,
-                    selectedMuscles: [muscle],
-                    isInteractive: false
-                )
-                .frame(width: 52, height: 64)
-                .padding(4)
-                .background(AppColor.bodyLimb.opacity(0.6))
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .strokeBorder(AppColor.border, lineWidth: 1)
-                )
-                .accessibilityHidden(true)
+        VStack(spacing: 0) {
+            // Mini figure with the muscle lit, centered.
+            AnatomyFigureView(
+                side: muscle.isBackFacing ? .back : .front,
+                gender: gender,
+                selectedMuscles: [muscle],
+                isInteractive: false
+            )
+            .frame(width: 46, height: 58)
+            .padding(4)
+            .background(AppColor.bodyLimb.opacity(0.6))
+            .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                    .strokeBorder(AppColor.border, lineWidth: 1)
+            )
+            .accessibilityHidden(true)
 
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(muscle.displayName)
-                        .font(.system(size: 22, weight: .bold))
-                        .kerning(-0.4)
-                        .foregroundStyle(AppColor.textPrimary)
-                    Text(muscle.anatomicalName)
-                        .font(.system(size: 13))
-                        .foregroundStyle(AppColor.textSecondary)
-                    Text("\(exerciseCount) exercises")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(AppColor.accentBright)
-                        .padding(.top, 4)
-                }
+            Text(muscle.displayName)
+                .font(.system(size: 22, weight: .bold))
+                .kerning(-0.4)
+                .foregroundStyle(AppColor.textPrimary)
+                .padding(.top, 10)
+            Text(muscle.anatomicalName)
+                .font(.system(size: 13))
+                .foregroundStyle(AppColor.textSecondary)
+                .padding(.top, 2)
+            Text("\(exerciseCount) exercises")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(AppColor.accentBright)
+                .padding(.top, 5)
 
-                Spacer()
-
-                Button(action: onDismiss) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(AppColor.textSecondary)
-                        .frame(width: 32, height: 32)
-                        .background(Color.white.opacity(0.05))
-                        .clipShape(Circle())
-                }
-                .accessibilityLabel("Close muscle panel")
+            NavigationLink(value: muscle) {
+                Text("View Exercises")
+                    .font(.system(size: 16, weight: .semibold))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 52)
+                    .background(AppColor.accent)
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
+                    .accentGlow()
             }
-
-            HStack(spacing: DS.spacingM) {
-                NavigationLink(value: muscle) {
-                    Text("View Exercises")
-                        .font(.system(size: 16, weight: .semibold))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 52)
-                        .background(AppColor.accent)
-                        .foregroundStyle(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
-                        .accentGlow()
-                }
-                .buttonStyle(PressableStyle())
-                .accessibilityLabel("View \(muscle.displayName) exercises")
-
-                NavigationLink(value: muscle) {
-                    Image(systemName: "plus")
-                        .font(.system(size: 20, weight: .light))
-                        .foregroundStyle(AppColor.textSecondary)
-                        .frame(width: 52, height: 52)
-                        .background(Color.white.opacity(0.06))
-                        .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 15, style: .continuous)
-                                .strokeBorder(AppColor.border, lineWidth: 1)
-                        )
-                }
-                .buttonStyle(PressableStyle())
-                .accessibilityLabel("Choose a \(muscle.displayName) exercise to add to a workout")
+            .buttonStyle(PressableStyle())
+            .accessibilityLabel("View \(muscle.displayName) exercises")
+            .padding(.top, DS.spacing)
+        }
+        .frame(maxWidth: .infinity)
+        .overlay(alignment: .topTrailing) {
+            Button(action: onDismiss) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(AppColor.textSecondary)
+                    .frame(width: 32, height: 32)
+                    .background(Color.white.opacity(0.05))
+                    .clipShape(Circle())
             }
+            .accessibilityLabel("Close muscle panel")
         }
         .padding(DS.spacingL)
         .background(AppColor.card.opacity(0.94))
