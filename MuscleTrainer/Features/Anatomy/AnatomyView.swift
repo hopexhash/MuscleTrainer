@@ -43,7 +43,7 @@ struct AnatomyView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .center, spacing: 0) {
             HStack(spacing: 0) {
                 Text("Muscle")
                     .font(.system(size: 13, weight: .semibold))
@@ -56,13 +56,14 @@ struct AnatomyView: View {
                 .font(AppFont.pageTitle)
                 .kerning(-0.5)
                 .foregroundStyle(AppColor.textPrimary)
+                .multilineTextAlignment(.center)
                 .padding(.top, 10)
             Text("Tap a muscle to see exercises.")
                 .font(.system(size: 14))
                 .foregroundStyle(AppColor.textTertiary)
                 .padding(.top, 5)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .center)
         .padding(.horizontal, DS.spacingL)
     }
 
