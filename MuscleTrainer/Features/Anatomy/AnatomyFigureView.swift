@@ -25,15 +25,15 @@ struct AnatomyFigureView: View {
             let regions = AnatomyShapeStore.regions(side: side, gender: gender)
 
             Canvas { context, _ in
-                let skeleton = AnatomyShapeStore.skeleton(gender: gender)
-                context.fill(skeleton.base.applying(transform), with: .color(AppColor.bodyFill))
-                context.fill(skeleton.limbs.applying(transform), with: .color(AppColor.bodyLimb))
-
-                let hasSelection = !selectedMuscles.isEmpty
-                // Background-colored seam so adjacent muscles never merge into one shape.
                 let scale = min(size.width / AnatomyShapeStore.designSize.width,
                                 size.height / AnatomyShapeStore.designSize.height)
-                let seamWidth = max(0.6, 2 * scale)
+                let lineWidth = max(0.5, 1.8 * scale)
+
+                let outline = AnatomyShapeStore.outline(side: side, gender: gender).applying(transform)
+                context.fill(outline, with: .color(AppColor.bodyFill))
+                context.stroke(outline, with: .color(AppColor.anatomyLine), lineWidth: lineWidth)
+
+                let hasSelection = !selectedMuscles.isEmpty
 
                 for region in regions {
                     let path = region.path.applying(transform)
@@ -63,8 +63,11 @@ struct AnatomyFigureView: View {
                         context.fill(path, with: .color(AppColor.muscleIdle.opacity(hasSelection ? 0.4 : 1)))
                     }
 
-                    context.stroke(path, with: .color(AppColor.background), lineWidth: seamWidth)
+                    context.stroke(path, with: .color(AppColor.anatomyLine), lineWidth: lineWidth)
                 }
+
+                let details = AnatomyShapeStore.details(side: side, gender: gender).applying(transform)
+                context.stroke(details, with: .color(AppColor.anatomyLine.opacity(0.8)), lineWidth: lineWidth * 0.85)
             }
             .contentShape(Rectangle())
             .onTapGesture { location in
