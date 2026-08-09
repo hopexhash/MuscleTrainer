@@ -137,6 +137,9 @@ app.use('/videos', express.static(VIDEOS_DIR, {
   setHeaders: res => res.set('Cache-Control', 'public, max-age=60'),
 }));
 
+app.get('/privacy', (req, res) => res.sendFile(path.join(__dirname, 'public', 'privacy.html')));
+app.get('/support', (req, res) => res.sendFile(path.join(__dirname, 'public', 'support.html')));
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.listen(PORT, () => {

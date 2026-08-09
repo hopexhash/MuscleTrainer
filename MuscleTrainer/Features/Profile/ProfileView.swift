@@ -166,9 +166,8 @@ struct ProfileView: View {
 
             Section("About") {
                 LabeledContent("Version", value: "1.0")
-                Link(destination: URL(string: "https://www.apple.com/legal/privacy/")!) {
-                    Text("Privacy")
-                        .foregroundStyle(AppColor.textPrimary)
+                NavigationLink("Privacy & Terms") {
+                    PrivacyPolicyView()
                 }
             }
             .listRowBackground(AppColor.card)
