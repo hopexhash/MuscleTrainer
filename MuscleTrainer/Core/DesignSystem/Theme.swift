@@ -67,10 +67,10 @@ enum AppColor {
         light: Color.black.opacity(0.07),
         dark: Color.white.opacity(0.06)
     )
-    /// Muscle fill when idle — near-white line-art fill.
+    /// Muscle fill when idle — a faint wash so regions stay tappable-looking.
     static let muscleIdle = Color(
-        light: .white,
-        dark: Color(red: 0.984, green: 0.992, blue: 0.996)
+        light: Color.black.opacity(0.05),
+        dark: Color.white.opacity(0.04)
     )
     /// Secondary-worked muscle: #17558C dark
     static let muscleSecondary = Color(
@@ -84,18 +84,21 @@ enum AppColor {
         light: Color(red: 0.663, green: 0.902, blue: 0.949),
         dark: Color(red: 0.663, green: 0.902, blue: 0.949)
     )
-    /// Anatomy figure ground — light in both modes, per the line-art style.
+    /// Anatomy figure ground — transparent wash; the background shows through.
     static let bodyFill = Color(
-        light: Color(red: 0.937, green: 0.953, blue: 0.965),
-        dark: Color(red: 0.910, green: 0.937, blue: 0.953)
+        light: Color.black.opacity(0.03),
+        dark: Color.white.opacity(0.02)
     )
     /// Body limbs/neck, slightly darker: #0C1219 dark
     static let bodyLimb = Color(
         light: Color(red: 0.906, green: 0.922, blue: 0.941),
         dark: Color(red: 0.047, green: 0.078, blue: 0.102)
     )
-    /// Anatomy line-art ink: #17262E in both modes
-    static let anatomyLine = Color(red: 0.090, green: 0.149, blue: 0.180)
+    /// Anatomy line-art ink: light on dark, dark on light.
+    static let anatomyLine = Color(
+        light: Color(red: 0.180, green: 0.271, blue: 0.318),
+        dark: Color(red: 0.616, green: 0.706, blue: 0.749)
+    )
     static let success = Color(red: 0.20, green: 0.78, blue: 0.47)
     static let destructive = Color(red: 1.0, green: 0.32, blue: 0.32)
 }

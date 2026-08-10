@@ -218,9 +218,9 @@ struct ProgressDashboardView: View {
                     .font(.system(size: 11))
                     .foregroundStyle(AppColor.textTertiary)
                 HStack(spacing: 4) {
-                    scaleStep(AppColor.muscleIdle)
-                    scaleStep(AppColor.heatLow)
-                    scaleStep(AppColor.heatMid)
+                    scaleStep(AppColor.surface)
+                    scaleStep(AppColor.accent.opacity(0.20))
+                    scaleStep(AppColor.accent.opacity(0.45))
                     scaleStep(AppColor.accent)
                 }
                 Text("More")

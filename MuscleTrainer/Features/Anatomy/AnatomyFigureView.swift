@@ -37,6 +37,7 @@ struct AnatomyFigureView: View {
 
                 for region in regions {
                     let path = region.path.applying(transform)
+                    var stroke = AppColor.anatomyLine
 
                     if let heatmap {
                         let value = foldedIntensity(for: region.muscle, in: heatmap)
@@ -45,10 +46,11 @@ struct AnatomyFigureView: View {
                             glow.addFilter(.blur(radius: 5))
                             glow.fill(path, with: .color(AppColor.accent.opacity(0.5)))
                             context.fill(path, with: .color(AppColor.accent))
+                            stroke = AppColor.accentBright
                         } else if value >= 0.4 {
-                            context.fill(path, with: .color(AppColor.heatMid))
+                            context.fill(path, with: .color(AppColor.accent.opacity(0.45)))
                         } else if value >= 0.15 {
-                            context.fill(path, with: .color(AppColor.heatLow))
+                            context.fill(path, with: .color(AppColor.accent.opacity(0.20)))
                         } else {
                             context.fill(path, with: .color(AppColor.muscleIdle))
                         }
@@ -57,13 +59,15 @@ struct AnatomyFigureView: View {
                         glow.addFilter(.blur(radius: 7))
                         glow.fill(path, with: .color(AppColor.accent.opacity(0.55)))
                         context.fill(path, with: .color(AppColor.accent))
+                        stroke = AppColor.accentBright
                     } else if secondaryMuscles.contains(region.muscle) {
-                        context.fill(path, with: .color(AppColor.muscleSecondary))
+                        context.fill(path, with: .color(AppColor.accent.opacity(0.35)))
                     } else {
-                        context.fill(path, with: .color(AppColor.muscleIdle.opacity(hasSelection ? 0.4 : 1)))
+                        context.fill(path, with: .color(AppColor.muscleIdle))
+                        stroke = AppColor.anatomyLine.opacity(hasSelection ? 0.32 : 1)
                     }
 
-                    context.stroke(path, with: .color(AppColor.anatomyLine), lineWidth: lineWidth)
+                    context.stroke(path, with: .color(stroke), lineWidth: lineWidth)
                 }
 
                 let details = AnatomyShapeStore.details(side: side, gender: gender).applying(transform)

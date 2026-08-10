@@ -442,8 +442,8 @@ struct WorkoutCompleteView: View {
                         MuscleHeatmapView(gender: gender, heatmap: session.muscleIntensity, height: 230)
                         HStack(spacing: DS.spacing) {
                             legend(color: AppColor.accent, label: "Primary")
-                            legend(color: AppColor.heatMid, label: "Secondary")
-                            legend(color: AppColor.muscleIdle, label: "Untrained")
+                            legend(color: AppColor.accent.opacity(0.45), label: "Secondary")
+                            legend(color: AppColor.surface, label: "Untrained")
                         }
                     }
                     .frame(maxWidth: .infinity)

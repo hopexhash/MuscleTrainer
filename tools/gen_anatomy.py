@@ -206,7 +206,7 @@ def preview(view_name, outline_r, muscles, details, out_png):
     SC = 2
     img = Image.new("RGB", (W*SC, H*SC), (5, 9, 11))
     dr = ImageDraw.Draw(img)
-    LINE = (23, 38, 46); BODYF = (232, 239, 243); MUSF = (250, 252, 253)
+    LINE = (157, 180, 191); BODYF = (11, 17, 21); MUSF = (15, 23, 28)
     def poly(segs): return [(x*SC, y*SC) for x, y in flatten(segs)]
     full = outline_r + mirror_pts(list(reversed(outline_r))[1:-1])
     dr.polygon(poly(cr_cubics(full, True)), fill=BODYF, outline=LINE, width=3)
