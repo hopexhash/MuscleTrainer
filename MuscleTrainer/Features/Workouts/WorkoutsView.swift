@@ -62,7 +62,7 @@ struct WorkoutsView: View {
                 .padding(.horizontal, DS.spacing)
                 .padding(.bottom, DS.spacingXL)
             }
-            .background(AppColor.background)
+            .background(GlowOrbsBackground())
             .navigationTitle("Workouts")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {

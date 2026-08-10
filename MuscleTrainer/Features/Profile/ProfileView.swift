@@ -17,7 +17,7 @@ struct ProfileView: View {
                     LoadingErrorView()
                 }
             }
-            .background(AppColor.background)
+            .background(GlowOrbsBackground())
             .navigationTitle("Profile")
         }
     }

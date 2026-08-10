@@ -8,7 +8,7 @@ struct AICoachView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                AppColor.background.ignoresSafeArea()
+                GlowOrbsBackground()
                 RadialGradient(
                     colors: [AppColor.accent.opacity(0.13), .clear],
                     center: UnitPoint(x: 0.5, y: 0.3),

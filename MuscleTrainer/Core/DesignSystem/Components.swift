@@ -155,6 +155,60 @@ struct FilterChip: View {
     }
 }
 
+
+// MARK: - Ambient glow orbs
+
+/// Subtle drifting cyan orbs behind screen content. Replaces a plain
+/// background color; hit-testing passes through.
+struct GlowOrbsBackground: View {
+    @State private var animate = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private struct Orb {
+        let size: CGFloat
+        let x: CGFloat
+        let y: CGFloat
+        let dx: CGFloat
+        let dy: CGFloat
+        let duration: Double
+        let opacity: Double
+    }
+
+    private let orbs: [Orb] = [
+        Orb(size: 190, x: 0.12, y: 0.16, dx: 30, dy: -46, duration: 21, opacity: 0.10),
+        Orb(size: 130, x: 0.88, y: 0.30, dx: -26, dy: 42, duration: 17, opacity: 0.08),
+        Orb(size: 240, x: 0.80, y: 0.80, dx: -38, dy: -30, duration: 25, opacity: 0.07),
+        Orb(size: 100, x: 0.18, y: 0.76, dx: 24, dy: 30, duration: 15, opacity: 0.09),
+    ]
+
+    var body: some View {
+        GeometryReader { proxy in
+            ZStack {
+                AppColor.background
+                ForEach(Array(orbs.enumerated()), id: \.offset) { _, orb in
+                    Circle()
+                        .fill(
+                            RadialGradient(
+                                colors: [AppColor.accent.opacity(orb.opacity), .clear],
+                                center: .center, startRadius: 0, endRadius: orb.size / 2
+                            )
+                        )
+                        .frame(width: orb.size, height: orb.size)
+                        .position(x: proxy.size.width * orb.x, y: proxy.size.height * orb.y)
+                        .offset(x: animate ? orb.dx : -orb.dx, y: animate ? orb.dy : -orb.dy)
+                        .animation(
+                            reduceMotion ? nil : .easeInOut(duration: orb.duration).repeatForever(autoreverses: true),
+                            value: animate
+                        )
+                }
+            }
+        }
+        .ignoresSafeArea()
+        .allowsHitTesting(false)
+        .onAppear { animate = true }
+    }
+}
+
 // MARK: - Section header
 
 struct SectionHeader: View {

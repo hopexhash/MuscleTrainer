@@ -12,7 +12,7 @@ struct AnatomyView: View {
     var body: some View {
         NavigationStack {
             ZStack(alignment: .bottom) {
-                AppColor.background.ignoresSafeArea()
+                GlowOrbsBackground()
 
                 VStack(alignment: .leading, spacing: 0) {
                     header

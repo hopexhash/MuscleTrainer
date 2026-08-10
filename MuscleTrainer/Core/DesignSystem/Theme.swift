@@ -94,10 +94,10 @@ enum AppColor {
         light: Color(red: 0.906, green: 0.922, blue: 0.941),
         dark: Color(red: 0.047, green: 0.078, blue: 0.102)
     )
-    /// Anatomy line-art ink: light on dark, dark on light.
+    /// Anatomy line-art ink: bright on dark, dark on light.
     static let anatomyLine = Color(
-        light: Color(red: 0.180, green: 0.271, blue: 0.318),
-        dark: Color(red: 0.616, green: 0.706, blue: 0.749)
+        light: Color(red: 0.161, green: 0.247, blue: 0.290),
+        dark: Color(red: 0.812, green: 0.890, blue: 0.922)
     )
     static let success = Color(red: 0.20, green: 0.78, blue: 0.47)
     static let destructive = Color(red: 1.0, green: 0.32, blue: 0.32)

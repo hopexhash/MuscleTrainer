@@ -55,7 +55,7 @@ struct ProgressDashboardView: View {
                     .padding(.bottom, DS.spacingXL)
                 }
             }
-            .background(AppColor.background)
+            .background(GlowOrbsBackground())
             .navigationTitle("Progress")
         }
     }
