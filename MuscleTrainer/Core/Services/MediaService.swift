@@ -30,9 +30,22 @@ final class MediaService {
         }
     }
 
-    var baseURL: URL? {
+    /// The user's override, or the baked-in default server that ships with
+    /// the app (AppConfig.defaultMediaServerURL) — so your uploaded videos
+    /// reach every user without any setup.
+    var effectiveURLString: String {
         let trimmed = serverURLString.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty, let url = URL(string: trimmed), url.scheme != nil, url.host() != nil else {
+        return trimmed.isEmpty ? AppConfig.defaultMediaServerURL : trimmed
+    }
+
+    var isUsingDefaultServer: Bool {
+        serverURLString.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && !AppConfig.defaultMediaServerURL.isEmpty
+    }
+
+    var baseURL: URL? {
+        let string = effectiveURLString
+        guard !string.isEmpty, let url = URL(string: string), url.scheme != nil, url.host() != nil else {
             return nil
         }
         return url

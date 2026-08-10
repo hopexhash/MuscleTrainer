@@ -113,7 +113,7 @@ struct ProfileView: View {
             .listRowBackground(AppColor.card)
 
             Section {
-                TextField("https://your-media-server.example", text: $mediaService.serverURLString)
+                TextField("Custom server URL (optional)", text: $mediaService.serverURLString)
                     .font(AppFont.body)
                     .keyboardType(.URL)
                     .textInputAutocapitalization(.never)
@@ -133,7 +133,11 @@ struct ProfileView: View {
                             .font(AppFont.meta)
                             .foregroundStyle(AppColor.destructive)
                     } else if !mediaService.isConfigured {
-                        Text("Run the bundled media server and paste its URL to see your own demo videos.")
+                        Text("No video server configured for this build.")
+                            .font(AppFont.meta)
+                            .foregroundStyle(AppColor.textSecondary)
+                    } else if mediaService.isUsingDefaultServer {
+                        Text("\(mediaService.videos.count) video\(mediaService.videos.count == 1 ? "" : "s") from the MuscleTrainer library")
                             .font(AppFont.meta)
                             .foregroundStyle(AppColor.textSecondary)
                     } else {
@@ -152,7 +156,7 @@ struct ProfileView: View {
             } header: {
                 Text("Exercise videos")
             } footer: {
-                Text("Videos you upload in the server's admin page play as loops on exercise pages and in the workout player.")
+                Text("Exercise videos come from the app's video library automatically. Advanced: point the app at your own server instead.")
             }
             .listRowBackground(AppColor.card)
 

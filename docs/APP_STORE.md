@@ -71,7 +71,14 @@ Everything code-side is already in the repo. This is the checklist for the parts
 **Age rating questionnaire:** answer None/No to everything → rating 4+.
 
 **App Review notes** (paste into the review notes field)
-> All features work without an account or any setup. Workout data is stored locally with SwiftData. “AI” workout generation runs entirely on-device with deterministic logic — no external AI service is contacted. The optional “Exercise videos” feature in Profile lets users stream exercise demo clips from a personal server they host themselves; the app makes no network requests unless that URL is configured.
+> All features work without an account or any setup. Workout data is stored locally with SwiftData. “AI” workout generation runs entirely on-device with deterministic logic — no external AI service is contacted. Exercise demonstration videos are streamed from the developer’s media server; those requests contain no personal data or identifiers. Users may optionally point the app at their own server in Profile.
+
+
+## Shipping your videos to all users
+
+1. Deploy the media server (`backend-cloudflare/` is the free option) and upload videos on its admin page.
+2. Put the server URL into `MuscleTrainer/Core/AppConfig.swift` (`defaultMediaServerURL`).
+3. Build and ship. Every user now streams your videos automatically — and because the app refreshes the manifest on each launch, videos you upload or replace later appear for everyone **without an app update**.
 
 ## Screenshots
 

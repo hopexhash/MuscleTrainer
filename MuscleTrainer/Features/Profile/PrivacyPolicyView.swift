@@ -20,13 +20,12 @@ struct PrivacyPolicyView: View {
                         data. The app contains no third-party SDKs and no advertising.
                         """)
 
-                section("Exercise videos (optional)",
+                section("Exercise videos",
                         """
-                        If you connect a media server in Profile → Exercise videos, the app fetches \
-                        a list of exercise videos and streams them from the server URL you entered. \
-                        These requests go directly from your device to that server — typically one \
-                        you host yourself — and contain no personal information. If you never \
-                        configure a server, the app makes no network requests at all.
+                        The app streams exercise demonstration videos from the MuscleTrainer video \
+                        library (or from a custom server if you configure one in Profile). These \
+                        requests fetch only the video list and the video files themselves — they \
+                        carry no account, no identifiers, and nothing about you or your training.
                         """)
 
                 section("Deleting your data",
