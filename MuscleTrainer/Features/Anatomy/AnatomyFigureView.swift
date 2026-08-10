@@ -101,6 +101,7 @@ struct AnatomyFigureView: View {
         if muscle == .chest { value = max(value, heatmap[.upperChest] ?? 0) }
         if muscle == .traps { value = max(value, heatmap[.neck] ?? 0) }
         if muscle == .quads { value = max(value, heatmap[.hipFlexors] ?? 0) }
+        if muscle == .calves { value = max(value, heatmap[.tibialis] ?? 0) }
         return value
     }
 }
